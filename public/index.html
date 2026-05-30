@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DP AI Lab — Student Project Explorer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
+<style>
+:root {
+  --ink: #0f0e0d;
+  --paper: #f5f2ed;
+  --card: #ffffff;
+  --accent: #e84b2a;
+  --accent2: #1a6cf0;
+  --muted: #7a7570;
+  --border: #e2ddd6;
+  --tag-bg: #f0ece5;
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+body { font-family:'DM Sans',sans-serif; background:var(--paper); color:var(--ink); min-height:100vh; }
+
+/* HEADER */
+header {
+  border-bottom:1.5px solid var(--ink);
+  padding:0 clamp(24px,5vw,80px);
+  display:flex; align-items:center; justify-content:space-between;
+  height:64px; position:sticky; top:0;
+  background:var(--paper); z-index:100;
+}
+.logo {
+  font-family:'Syne',sans-serif; font-weight:800; font-size:18px;
+  letter-spacing:-0.03em; display:flex; align-items:center; gap:8px;
+}
+.logo-dot { width:8px; height:8px; background:var(--accent); border-radius:50%; }
+nav { display:flex; gap:32px; font-size:13px; font-weight:500; }
+nav a { color:var(--muted); text-decoration:none; transition:color .15s; }
+nav a:hover { color:var(--ink); }
+
+/* HERO */
+.hero {
+  padding:clamp(60px,10vw,100px) clamp(24px,5vw,80px) clamp(40px,6vw,64px);
+  display:grid; grid-template-columns:1fr 1fr; gap:40px; align-items:end;
+  border-bottom:1px solid var(--border);
+}
+@media(max-width:768px){ .hero { grid-template-columns:1fr; } }
+.hero-eyebrow {
+  font-size:12px; font-weight:500; letter-spacing:0.12em;
+  text-transform:uppercase; color:var(--accent); margin-bottom:20px;
+}
+.hero h1 {
+  font-family:'Syne',sans-serif; font-size:clamp(40px,6vw,68px);
+  font-weight:800; line-height:1.0; letter-spacing:-0.03em; margin-bottom:24px;
+}
+.hero h1 em { font-style:italic; font-family:'DM Sans',sans-serif; font-weight:300; color:var(--muted); }
+.hero-sub { font-size:17px; line-height:1.65; color:var(--muted); max-width:420px; }
+.hero-stats { display:flex; flex-direction:column; gap:20px; }
+.stat-card {
+  background:var(--card); border:1px solid var(--border); border-radius:12px;
+  padding:20px 24px; display:flex; align-items:baseline; gap:12px;
+}
+.stat-number { font-family:'Syne',sans-serif; font-size:40px; font-weight:800; letter-spacing:-0.04em; }
+.stat-label { font-size:14px; color:var(--muted); line-height:1.4; }
+
+/* FILTER */
+.filter-section {
+  padding:20px clamp(24px,5vw,80px);
+  display:flex; align-items:center; gap:10px; flex-wrap:wrap;
+  border-bottom:1px solid var(--border);
+  background:var(--paper); position:sticky; top:64px; z-index:90;
+}
+.filter-label {
+  font-size:11px; font-weight:600; letter-spacing:0.1em;
+  text-transform:uppercase; color:var(--muted); margin-right:4px;
+}
+.filter-btn {
+  font-family:'DM Sans',sans-serif; font-size:13px; font-weight:500;
+  padding:6px 14px; border-radius:100px; border:1px solid var(--border);
+  background:transparent; color:var(--muted); cursor:pointer; transition:all .15s;
+}
+.filter-btn:hover { border-color:var(--ink); color:var(--ink); }
+.filter-btn.active { background:var(--ink); color:#fff; border-color:var(--ink); }
+
+/* GRID */
+.projects-section { padding:clamp(40px,6vw,64px) clamp(24px,5vw,80px); }
+.section-header { display:flex; align-items:baseline; justify-content:space-between; margin-bottom:28px; }
+.section-title {
+  font-family:'Syne',sans-serif; font-size:12px; font-weight:600;
+  letter-spacing:0.12em; text-transform:uppercase; color:var(--muted);
+}
+.project-count { font-size:13px; color:var(--muted); }
+.projects-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(300px,1fr)); gap:20px; }
+
+/* CARD */
+.project-card {
+  background:var(--card); border:1px solid var(--border); border-radius:16px;
+  overflow:hidden; display:flex; flex-direction:column;
+  transition:transform .2s, box-shadow .2s;
+  animation:fadeUp .4s ease both;
+}
+.project-card:hover { transform:translateY(-3px); box-shadow:0 12px 40px rgba(0,0,0,0.08); }
+.project-card.coming-soon { opacity:0.6; }
+@keyframes fadeUp { from{opacity:0;transform:translateY(16px)} to{opacity:1;transform:translateY(0)} }
+
+.card-header {
+  padding:22px 22px 0;
+  display:flex; align-items:flex-start; justify-content:space-between; gap:12px;
+}
+.card-icon { width:46px; height:46px; border-radius:12px; display:flex; align-items:center; justify-content:center; font-size:22px; flex-shrink:0; }
+.card-right { display:flex; flex-direction:column; align-items:flex-end; gap:6px; }
+.card-difficulty {
+  font-size:10px; font-weight:700; letter-spacing:0.08em;
+  text-transform:uppercase; padding:3px 9px; border-radius:100px;
+}
+.diff-beginner { background:#e8f8f0; color:#0a7a4e; }
+.diff-intermediate { background:#fff4e0; color:#a05e00; }
+.diff-advanced { background:#fce8e8; color:#b52020; }
+.coming-badge {
+  font-size:10px; font-weight:600; letter-spacing:0.06em; text-transform:uppercase;
+  padding:3px 9px; border-radius:100px; background:var(--tag-bg); color:var(--muted);
+}
+
+.card-body { padding:14px 22px 18px; flex:1; }
+.card-category { font-size:10px; font-weight:700; letter-spacing:0.12em; text-transform:uppercase; color:var(--muted); margin-bottom:6px; }
+.card-title { font-family:'Syne',sans-serif; font-size:19px; font-weight:700; letter-spacing:-0.02em; line-height:1.2; margin-bottom:8px; }
+.card-desc { font-size:13.5px; line-height:1.6; color:var(--muted); margin-bottom:14px; }
+.card-tags { display:flex; flex-wrap:wrap; gap:5px; }
+.tag { font-size:11px; padding:3px 8px; background:var(--tag-bg); border-radius:4px; color:var(--muted); }
+
+.card-footer {
+  padding:14px 22px; border-top:1px solid var(--border);
+  display:flex; align-items:center; justify-content:space-between;
+}
+.card-time { font-size:12px; color:var(--muted); }
+
+.blueprint-btn {
+  font-family:'DM Sans',sans-serif; font-size:13px; font-weight:500;
+  padding:7px 16px; border-radius:8px; border:1.5px solid var(--ink);
+  background:transparent; color:var(--ink); cursor:pointer;
+  text-decoration:none; display:inline-flex; align-items:center; gap:5px;
+  transition:all .15s;
+}
+.blueprint-btn:hover { background:var(--ink); color:var(--paper); }
+.blueprint-btn.disabled {
+  border-color:var(--border); color:var(--muted); cursor:default; pointer-events:none;
+}
+
+/* DEPLOY STRIP */
+.deploy-strip {
+  margin:0 clamp(24px,5vw,80px) clamp(40px,6vw,64px);
+  background:var(--ink); border-radius:16px;
+  padding:clamp(28px,4vw,44px) clamp(28px,4vw,48px);
+  display:grid; grid-template-columns:1fr auto; gap:32px; align-items:center;
+}
+@media(max-width:640px){ .deploy-strip { grid-template-columns:1fr; } }
+.deploy-text h2 {
+  font-family:'Syne',sans-serif; font-size:clamp(22px,3vw,30px);
+  font-weight:800; letter-spacing:-0.02em; color:var(--paper); margin-bottom:8px;
+}
+.deploy-text p { font-size:14px; color:rgba(245,242,237,0.5); line-height:1.6; max-width:480px; }
+.deploy-platforms { display:flex; gap:10px; flex-wrap:wrap; }
+.platform-pill {
+  font-size:12px; font-weight:600; padding:8px 16px; border-radius:8px;
+  border:1px solid rgba(255,255,255,0.15); color:rgba(255,255,255,0.7);
+  white-space:nowrap;
+}
+.platform-pill.highlight { background:var(--accent); border-color:var(--accent); color:#fff; }
+
+/* FOOTER */
+footer {
+  border-top:1px solid var(--border); padding:20px clamp(24px,5vw,80px);
+  display:flex; align-items:center; justify-content:space-between;
+  font-size:12px; color:var(--muted);
+}
+@media(max-width:600px){ footer{flex-direction:column;gap:8px;text-align:center} nav{display:none} }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo"><span class="logo-dot"></span>DP AI Lab</div>
+  <nav>
+    <a href="#projects">Projects</a>
+    <a href="#deploy">Deploy</a>
+  </nav>
+</header>
+
+<section class="hero">
+  <div>
+    <div class="hero-eyebrow">IB Diploma Programme · AI Projects</div>
+    <h1>Build <em>real</em><br>AI tools.<br>Learn <em>by</em> doing.</h1>
+    <p class="hero-sub">10 project blueprints for DP students. Each one walks you through the thinking before the building — so what you make is actually yours.</p>
+  </div>
+  <div class="hero-stats">
+    <div class="stat-card">
+      <div class="stat-number" style="color:var(--accent)">10</div>
+      <div class="stat-label">Projects across research, academic, wellbeing, creative & tools</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-number" style="color:var(--accent2)">1</div>
+      <div class="stat-label">Blueprint live now — more added as each one is ready</div>
+    </div>
+  </div>
+</section>
+
+<div class="filter-section">
+  <span class="filter-label">Filter</span>
+  <button class="filter-btn active" data-filter="all">All</button>
+  <button class="filter-btn" data-filter="research">Research</button>
+  <button class="filter-btn" data-filter="academic">Academic</button>
+  <button class="filter-btn" data-filter="wellbeing">Wellbeing</button>
+  <button class="filter-btn" data-filter="creative">Creative</button>
+  <button class="filter-btn" data-filter="tools">Tools</button>
+</div>
+
+<section class="projects-section" id="projects">
+  <div class="section-header">
+    <span class="section-title">Project blueprints</span>
+    <span class="project-count" id="count"></span>
+  </div>
+  <div class="projects-grid" id="grid"></div>
+</section>
+
+<section class="deploy-strip" id="deploy">
+  <div class="deploy-text">
+    <h2>Each blueprint is a static HTML page.<br>Deploy it in minutes.</h2>
+    <p>No server. No database. Drag the folder to Netlify and it's live. Students can fork it, personalise it, and share it.</p>
+  </div>
+  <div class="deploy-platforms">
+    <span class="platform-pill highlight">Netlify ↗</span>
+    <span class="platform-pill">GitHub Pages</span>
+    <span class="platform-pill">Vercel</span>
+    <span class="platform-pill">Replit</span>
+  </div>
+</section>
+
+<footer>
+  <span>DP AI Lab · Built for IB Diploma students</span>
+  <span>Use AI ethically. Cite your tools. Think for yourself.</span>
+</footer>
+
+<script>
+const PROJECTS = [
+  {
+    id:1, icon:"🤖", iconBg:"#e8f0fe", category:"research",
+    label:"Research", title:"AI Agent Team for DP",
+    desc:"Design a team of specialised AI agents — researcher, tutor, essay coach, wellbeing, planner — that share memory and work together around your studies.",
+    tags:["Multi-agent","EE","IA","All subjects"], difficulty:"advanced", time:"3–4 weeks",
+    blueprint:"blueprints/agent-team.html", ready:true
+  },
+  {
+    id:2, icon:"📚", iconBg:"#e8f8f0", category:"research",
+    label:"Research", title:"EE Source Hunter",
+    desc:"Give your research question and it finds credible sources, evaluates reliability using CRAAP test, and formats a bibliography in IB style.",
+    tags:["Extended Essay","Sources","Citations"], difficulty:"intermediate", time:"1–2 weeks",
+    blueprint:"blueprints/ee-source-hunter.html", ready:false
+  },
+  {
+    id:3, icon:"✍️", iconBg:"#fff0e8", category:"academic",
+    label:"Academic", title:"Essay Rubric Coach",
+    desc:"Paste any essay draft and select your subject. Get criterion-by-criterion feedback using the actual IB rubric — specific, not vague.",
+    tags:["History","Language A","Economics","Rubric"], difficulty:"beginner", time:"3–5 days",
+    blueprint:"blueprints/essay-rubric-coach.html", ready:false
+  },
+  {
+    id:4, icon:"🧠", iconBg:"#f3e8ff", category:"academic",
+    label:"Academic", title:"Concept Explainer Engine",
+    desc:"A tutor that remembers every concept you've struggled with and adapts its explanations to how you actually learn.",
+    tags:["Maths","Sciences","Any subject"], difficulty:"beginner", time:"2–4 days",
+    blueprint:"blueprints/concept-explainer.html", ready:false
+  },
+  {
+    id:5, icon:"🌱", iconBg:"#e8f8ee", category:"wellbeing",
+    label:"Wellbeing", title:"DP Stress Companion",
+    desc:"A private weekly check-in tool. Helps you name what you're feeling, reflect on what's in your control, and find one small action for today.",
+    tags:["Wellbeing","CAS","Reflection"], difficulty:"beginner", time:"2–3 days",
+    blueprint:"blueprints/stress-companion.html", ready:false
+  },
+  {
+    id:6, icon:"📅", iconBg:"#fff8e0", category:"tools",
+    label:"Tools", title:"IB Deadline Planner",
+    desc:"Enter your exam session and subjects. Generates a reverse-engineered timeline for every IA, EE draft, and mock — with weekly milestones.",
+    tags:["Planning","IA","EE","Exam prep"], difficulty:"intermediate", time:"1 week",
+    blueprint:"blueprints/deadline-planner.html", ready:false
+  },
+  {
+    id:7, icon:"🎭", iconBg:"#fee8f0", category:"creative",
+    label:"Creative", title:"TOK Idea Generator",
+    desc:"Pick a Knowledge Question and AOK. Brainstorms real-world examples, counter-examples, and perspectives for genuine TOK thinking.",
+    tags:["TOK","Knowledge Questions","Exhibition"], difficulty:"beginner", time:"2–3 days",
+    blueprint:"blueprints/tok-ideas.html", ready:false
+  },
+  {
+    id:8, icon:"🔬", iconBg:"#e8f4ff", category:"research",
+    label:"Research", title:"IA Data Analyser",
+    desc:"Upload your IA data (CSV), describe your research question. AI recommends statistical tests, generates charts, and explains what the data shows.",
+    tags:["Sciences IA","Psychology","Economics","Data"], difficulty:"intermediate", time:"1–2 weeks",
+    blueprint:"blueprints/ia-data-analyser.html", ready:false
+  },
+  {
+    id:9, icon:"🌍", iconBg:"#e8fff2", category:"creative",
+    label:"Creative", title:"CAS Reflection Prompter",
+    desc:"Describe a CAS activity. AI asks the right questions to unlock a deep, Level-7 reflection covering all learning outcomes.",
+    tags:["CAS","Creativity","Activity","Service"], difficulty:"beginner", time:"1–2 days",
+    blueprint:"blueprints/cas-reflection.html", ready:false
+  },
+  {
+    id:10, icon:"🗣️", iconBg:"#fdf0ff", category:"tools",
+    label:"Tools", title:"Language B Conversation Partner",
+    desc:"Practice Spanish B, French B, or Mandarin B. Role-plays IB prescribed theme scenarios and gives corrective grammar feedback after each exchange.",
+    tags:["Language B","Spanish","French","Mandarin"], difficulty:"beginner", time:"2–3 days",
+    blueprint:"blueprints/language-partner.html", ready:false
+  }
+];
+
+const diffLabel = { beginner:"Beginner", intermediate:"Intermediate", advanced:"Advanced" };
+
+function render(filter) {
+  const list = filter === 'all' ? PROJECTS : PROJECTS.filter(p => p.category === filter);
+  document.getElementById('count').textContent = `${list.length} project${list.length !== 1 ? 's' : ''}`;
+  const grid = document.getElementById('grid');
+  grid.innerHTML = '';
+  list.forEach((p, i) => {
+    const card = document.createElement('div');
+    card.className = 'project-card' + (p.ready ? '' : ' coming-soon');
+    card.style.animationDelay = `${i * 40}ms`;
+
+    const actionBtn = p.ready
+      ? `<a class="blueprint-btn" href="${p.blueprint}">Blueprint →</a>`
+      : `<span class="blueprint-btn disabled">Coming soon</span>`;
+
+    card.innerHTML = `
+      <div class="card-header">
+        <div class="card-icon" style="background:${p.iconBg}">${p.icon}</div>
+        <div class="card-right">
+          <span class="card-difficulty diff-${p.difficulty}">${diffLabel[p.difficulty]}</span>
+          ${!p.ready ? '<span class="coming-badge">Blueprint soon</span>' : ''}
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="card-category">${p.label}</div>
+        <div class="card-title">${p.title}</div>
+        <div class="card-desc">${p.desc}</div>
+        <div class="card-tags">${p.tags.map(t => `<span class="tag">${t}</span>`).join('')}</div>
+      </div>
+      <div class="card-footer">
+        <span class="card-time">⏱ ${p.time}</span>
+        ${actionBtn}
+      </div>`;
+    grid.appendChild(card);
+  });
+}
+
+document.querySelectorAll('.filter-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    render(btn.dataset.filter);
+  });
+});
+
+render('all');
+</script>
+</body>
+</html>

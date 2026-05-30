@@ -1,0 +1,1710 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Blueprint: AI Agent Team for DP — Build Guide</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:ital,wght@0,400;0,500;1,400&family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,600;0,9..144,700;1,9..144,300;1,9..144,600&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0d0c0b;
+  --surface: #161513;
+  --surface2: #1e1c1a;
+  --border: #2a2724;
+  --border2: #3a3632;
+  --ink: #f0ece4;
+  --ink2: #a09890;
+  --ink3: #605a54;
+  --accent: #e8a23a;
+  --accent-dim: rgba(232,162,58,0.12);
+  --green: #4dba87;
+  --green-dim: rgba(77,186,135,0.1);
+  --blue: #5b9cf6;
+  --blue-dim: rgba(91,156,246,0.1);
+  --red: #e05c5c;
+  --red-dim: rgba(224,92,92,0.1);
+  --purple: #b07ef8;
+  --purple-dim: rgba(176,126,248,0.1);
+}
+
+* { margin:0; padding:0; box-sizing:border-box; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  font-family: 'DM Sans', sans-serif;
+  background: var(--bg);
+  color: var(--ink);
+  min-height: 100vh;
+  font-size: 16px;
+  line-height: 1.7;
+}
+
+/* ── PROGRESS BAR ── */
+#progress-bar {
+  position: fixed;
+  top: 0; left: 0;
+  height: 3px;
+  background: var(--accent);
+  width: 0%;
+  z-index: 1000;
+  transition: width 0.3s ease;
+}
+
+/* ── SIDEBAR NAV ── */
+.sidebar {
+  position: fixed;
+  left: 0; top: 0; bottom: 0;
+  width: 240px;
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+  padding: 32px 0;
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+}
+
+.sidebar-logo {
+  padding: 0 24px 24px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 24px;
+}
+
+.sidebar-logo a {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 12px;
+  color: var(--ink3);
+  text-decoration: none;
+  display: block;
+  margin-bottom: 8px;
+}
+
+.sidebar-logo a:hover { color: var(--ink2); }
+
+.sidebar-title {
+  font-family: 'Fraunces', serif;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--ink);
+  line-height: 1.3;
+}
+
+.nav-section {
+  padding: 0 16px;
+  margin-bottom: 8px;
+}
+
+.nav-section-label {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink3);
+  padding: 0 8px;
+  margin-bottom: 6px;
+}
+
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.15s;
+  text-decoration: none;
+  color: var(--ink2);
+  font-size: 13px;
+}
+
+.nav-item:hover { background: var(--surface2); color: var(--ink); }
+
+.nav-item.active {
+  background: var(--accent-dim);
+  color: var(--accent);
+}
+
+.nav-dot {
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  border: 1.5px solid var(--ink3);
+  flex-shrink: 0;
+  transition: all 0.15s;
+}
+
+.nav-item.active .nav-dot, .nav-item.done .nav-dot {
+  border-color: var(--green);
+  background: var(--green);
+}
+
+.nav-item.active .nav-dot {
+  border-color: var(--accent);
+  background: var(--accent);
+}
+
+.nav-progress {
+  padding: 16px 24px;
+  margin-top: auto;
+  border-top: 1px solid var(--border);
+}
+
+.progress-label {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 11px;
+  color: var(--ink3);
+  margin-bottom: 8px;
+  display: flex;
+  justify-content: space-between;
+}
+
+.progress-track {
+  height: 4px;
+  background: var(--border2);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  background: var(--green);
+  border-radius: 2px;
+  transition: width 0.4s ease;
+  width: 0%;
+}
+
+/* ── MAIN CONTENT ── */
+.main {
+  margin-left: 240px;
+  min-height: 100vh;
+}
+
+/* ── HERO ── */
+.hero {
+  padding: 64px 80px 56px;
+  border-bottom: 1px solid var(--border);
+  position: relative;
+  overflow: hidden;
+}
+
+.hero::before {
+  content: '';
+  position: absolute;
+  top: -60px; right: -60px;
+  width: 320px; height: 320px;
+  background: radial-gradient(circle, rgba(232,162,58,0.06) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+.hero-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--accent);
+  background: var(--accent-dim);
+  border: 1px solid rgba(232,162,58,0.25);
+  padding: 5px 12px;
+  border-radius: 100px;
+  margin-bottom: 28px;
+}
+
+.hero h1 {
+  font-family: 'Fraunces', serif;
+  font-size: clamp(36px, 4vw, 52px);
+  font-weight: 700;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  margin-bottom: 20px;
+  color: var(--ink);
+}
+
+.hero h1 em {
+  font-style: italic;
+  font-weight: 300;
+  color: var(--ink2);
+}
+
+.hero-desc {
+  font-size: 17px;
+  line-height: 1.7;
+  color: var(--ink2);
+  max-width: 580px;
+  margin-bottom: 36px;
+}
+
+.hero-meta {
+  display: flex;
+  gap: 32px;
+  flex-wrap: wrap;
+}
+
+.meta-item {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.meta-label {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink3);
+}
+
+.meta-value {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--ink);
+}
+
+/* ── PARTS ── */
+.part {
+  border-bottom: 1px solid var(--border);
+  padding: 64px 80px;
+  scroll-margin-top: 24px;
+}
+
+.part-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 20px;
+  margin-bottom: 40px;
+}
+
+.part-num {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 11px;
+  color: var(--ink3);
+  margin-top: 6px;
+  min-width: 48px;
+}
+
+.part-title-block {}
+
+.part-eyebrow {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 8px;
+}
+
+.part-title {
+  font-family: 'Fraunces', serif;
+  font-size: clamp(26px, 3vw, 34px);
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+  color: var(--ink);
+  margin-bottom: 12px;
+}
+
+.part-intro {
+  font-size: 16px;
+  line-height: 1.7;
+  color: var(--ink2);
+  max-width: 640px;
+}
+
+/* ── CONCEPT BLOCKS ── */
+.concept-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 16px;
+  margin: 32px 0;
+}
+
+.concept-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 20px;
+}
+
+.concept-icon {
+  font-size: 24px;
+  margin-bottom: 12px;
+}
+
+.concept-name {
+  font-family: 'Fraunces', serif;
+  font-size: 16px;
+  font-weight: 600;
+  margin-bottom: 6px;
+  color: var(--ink);
+}
+
+.concept-desc {
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--ink2);
+}
+
+/* ── CALLOUT BOXES ── */
+.callout {
+  border-radius: 10px;
+  padding: 18px 20px;
+  margin: 24px 0;
+  font-size: 14px;
+  line-height: 1.6;
+  border-left: 3px solid;
+}
+
+.callout-title {
+  font-weight: 600;
+  font-size: 13px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  margin-bottom: 6px;
+  font-family: 'IBM Plex Mono', monospace;
+}
+
+.callout.insight {
+  background: var(--blue-dim);
+  border-color: var(--blue);
+  color: var(--ink2);
+}
+.callout.insight .callout-title { color: var(--blue); }
+
+.callout.warning {
+  background: var(--red-dim);
+  border-color: var(--red);
+  color: var(--ink2);
+}
+.callout.warning .callout-title { color: var(--red); }
+
+.callout.tip {
+  background: var(--green-dim);
+  border-color: var(--green);
+  color: var(--ink2);
+}
+.callout.tip .callout-title { color: var(--green); }
+
+.callout.think {
+  background: var(--accent-dim);
+  border-color: var(--accent);
+  color: var(--ink2);
+}
+.callout.think .callout-title { color: var(--accent); }
+
+/* ── CODE BLOCKS ── */
+.code-block {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  overflow: hidden;
+  margin: 24px 0;
+}
+
+.code-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface2);
+}
+
+.code-filename {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 12px;
+  color: var(--ink2);
+}
+
+.code-lang {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 11px;
+  color: var(--ink3);
+  background: var(--border);
+  padding: 2px 8px;
+  border-radius: 4px;
+}
+
+.code-body {
+  padding: 20px;
+  overflow-x: auto;
+}
+
+.code-body pre {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 13px;
+  line-height: 1.7;
+  color: var(--ink2);
+  white-space: pre;
+}
+
+.c-comment { color: var(--ink3); font-style: italic; }
+.c-key { color: var(--accent); }
+.c-str { color: var(--green); }
+.c-fn { color: var(--blue); }
+.c-kw { color: var(--purple); }
+.c-num { color: #e88c5a; }
+
+/* ── DIAGRAM ── */
+.diagram-box {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 32px;
+  margin: 24px 0;
+  text-align: center;
+}
+
+.agent-diagram {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0;
+}
+
+.diag-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  width: 100%;
+}
+
+.agent-box {
+  background: var(--surface2);
+  border: 1px solid var(--border2);
+  border-radius: 10px;
+  padding: 12px 18px;
+  min-width: 130px;
+  text-align: center;
+}
+
+.agent-box.coordinator {
+  background: var(--accent-dim);
+  border-color: rgba(232,162,58,0.35);
+  min-width: 160px;
+}
+
+.agent-name {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--ink);
+  margin-bottom: 3px;
+}
+
+.agent-role {
+  font-size: 11px;
+  color: var(--ink3);
+}
+
+.coordinator .agent-name { color: var(--accent); }
+
+.diag-arrow {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 6px 0;
+}
+
+.diag-line {
+  width: 1px;
+  height: 24px;
+  background: var(--border2);
+}
+
+.diag-arrowhead {
+  width: 0; height: 0;
+  border-left: 5px solid transparent;
+  border-right: 5px solid transparent;
+  border-top: 6px solid var(--border2);
+}
+
+.diag-hline {
+  height: 1px;
+  width: 100%;
+  background: var(--border2);
+  position: relative;
+}
+
+.diag-spread {
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 12px;
+  width: 100%;
+  position: relative;
+  padding-top: 20px;
+}
+
+.diag-spread::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: calc(50% - 280px);
+  right: calc(50% - 280px);
+  height: 1px;
+  background: var(--border2);
+}
+
+.spread-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0;
+}
+
+.spread-drop {
+  width: 1px; height: 20px;
+  background: var(--border2);
+}
+
+.memory-bar {
+  background: var(--purple-dim);
+  border: 1px solid rgba(176,126,248,0.25);
+  border-radius: 8px;
+  padding: 10px 24px;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 12px;
+  color: var(--purple);
+  width: 100%;
+  text-align: center;
+  margin-top: 20px;
+}
+
+/* ── WRITE ACTIVITIES ── */
+.activity {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  overflow: hidden;
+  margin: 32px 0;
+}
+
+.activity-header {
+  padding: 16px 24px;
+  background: var(--surface2);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.activity-badge {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 4px 10px;
+  border-radius: 6px;
+  background: var(--accent-dim);
+  color: var(--accent);
+  border: 1px solid rgba(232,162,58,0.2);
+}
+
+.activity-title {
+  font-family: 'Fraunces', serif;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.activity-body {
+  padding: 24px;
+}
+
+.activity-prompt {
+  font-size: 15px;
+  line-height: 1.7;
+  color: var(--ink2);
+  margin-bottom: 20px;
+}
+
+.activity-textarea {
+  width: 100%;
+  min-height: 140px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 14px 16px;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 13px;
+  color: var(--ink);
+  resize: vertical;
+  outline: none;
+  line-height: 1.6;
+  transition: border-color 0.15s;
+}
+
+.activity-textarea:focus {
+  border-color: var(--accent);
+}
+
+.activity-textarea::placeholder { color: var(--ink3); }
+
+.activity-save {
+  margin-top: 12px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.btn-save {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 13px;
+  font-weight: 500;
+  padding: 8px 20px;
+  border-radius: 8px;
+  border: 1px solid var(--accent);
+  background: var(--accent-dim);
+  color: var(--accent);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.btn-save:hover { background: var(--accent); color: var(--bg); }
+
+.save-status {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 12px;
+  color: var(--green);
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+.save-status.visible { opacity: 1; }
+
+/* ── FILE TREE ── */
+.file-tree {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 20px;
+  margin: 24px 0;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 13px;
+}
+
+.tree-line {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 3px 0;
+  color: var(--ink2);
+}
+
+.tree-line.folder { color: var(--accent); }
+.tree-line.file { color: var(--ink2); }
+.tree-line.highlight { color: var(--green); font-weight: 500; }
+.tree-indent { color: var(--ink3); }
+.tree-desc { color: var(--ink3); font-size: 11px; margin-left: 8px; }
+
+/* ── STEP LIST ── */
+.step-list {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  margin: 28px 0;
+}
+
+.step-item {
+  display: flex;
+  gap: 20px;
+}
+
+.step-num-circle {
+  width: 32px; height: 32px;
+  border-radius: 50%;
+  background: var(--surface2);
+  border: 1.5px solid var(--border2);
+  display: flex; align-items: center; justify-content: center;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--ink2);
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.step-content {}
+
+.step-title {
+  font-family: 'Fraunces', serif;
+  font-size: 17px;
+  font-weight: 600;
+  color: var(--ink);
+  margin-bottom: 6px;
+}
+
+.step-body {
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--ink2);
+}
+
+/* ── PART COMPLETE ── */
+.part-complete {
+  margin-top: 40px;
+  padding: 20px 24px;
+  background: var(--green-dim);
+  border: 1px solid rgba(77,186,135,0.2);
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: gap;
+  gap: 16px;
+}
+
+.complete-text {
+  font-size: 14px;
+  color: var(--green);
+  font-weight: 500;
+}
+
+.btn-complete {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 13px;
+  font-weight: 500;
+  padding: 8px 20px;
+  border-radius: 8px;
+  border: none;
+  background: var(--green);
+  color: var(--bg);
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
+
+.btn-complete:hover { opacity: 0.85; }
+.btn-complete.done { background: var(--border2); color: var(--ink3); cursor: default; }
+
+/* ── INLINE HIGHLIGHT ── */
+.hl { color: var(--accent); font-weight: 500; }
+.hl-green { color: var(--green); }
+.hl-blue { color: var(--blue); }
+.hl-purple { color: var(--purple); }
+code {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.875em;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  padding: 1px 6px;
+  border-radius: 4px;
+  color: var(--accent);
+}
+
+/* ── FINAL DEPLOY ── */
+.deploy-steps {
+  counter-reset: deploy;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin: 24px 0;
+}
+
+.deploy-step {
+  counter-increment: deploy;
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 16px 20px;
+}
+
+.deploy-step::before {
+  content: counter(deploy);
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 11px;
+  color: var(--ink3);
+  min-width: 20px;
+  margin-top: 2px;
+}
+
+.deploy-step-text {
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--ink2);
+}
+
+.deploy-step-text strong { color: var(--ink); font-weight: 500; }
+
+/* ── RESPONSIVE ── */
+@media (max-width: 900px) {
+  .sidebar { display: none; }
+  .main { margin-left: 0; }
+  .hero, .part { padding: 40px 24px; }
+}
+
+/* ── ANIMATIONS ── */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.part { animation: fadeIn 0.5s ease both; }
+</style>
+</head>
+<body>
+
+<div id="progress-bar"></div>
+
+<!-- SIDEBAR -->
+<nav class="sidebar">
+  <div class="sidebar-logo">
+    <a href="../index.html">← DP AI Lab</a>
+    <div class="sidebar-title">AI Agent Team<br>Build Guide</div>
+  </div>
+
+  <div class="nav-section">
+    <div class="nav-section-label">Blueprint</div>
+    <a class="nav-item active" href="#part0" data-part="0">
+      <span class="nav-dot"></span> Overview
+    </a>
+    <a class="nav-item" href="#part1" data-part="1">
+      <span class="nav-dot"></span> Part 1 — What is an agent?
+    </a>
+    <a class="nav-item" href="#part2" data-part="2">
+      <span class="nav-dot"></span> Part 2 — Design your team
+    </a>
+    <a class="nav-item" href="#part3" data-part="3">
+      <span class="nav-dot"></span> Part 3 — Write SOUL files
+    </a>
+    <a class="nav-item" href="#part4" data-part="4">
+      <span class="nav-dot"></span> Part 4 — Build the memory
+    </a>
+    <a class="nav-item" href="#part5" data-part="5">
+      <span class="nav-dot"></span> Part 5 — Your first API call
+    </a>
+    <a class="nav-item" href="#part6" data-part="6">
+      <span class="nav-dot"></span> Part 6 — Connect & deploy
+    </a>
+  </div>
+
+  <div class="nav-progress">
+    <div class="progress-label">
+      <span>Progress</span>
+      <span id="progress-pct">0%</span>
+    </div>
+    <div class="progress-track">
+      <div class="progress-fill" id="progress-fill"></div>
+    </div>
+  </div>
+</nav>
+
+<!-- MAIN -->
+<main class="main">
+
+  <!-- HERO -->
+  <section class="hero" id="part0">
+    <div class="hero-badge">🤖 Advanced · 3–4 weeks</div>
+    <h1>Build your own<br><em>AI Agent Team</em><br>for the Diploma Programme</h1>
+    <p class="hero-desc">This isn't a tutorial where you copy code and get something working. It's a build guide — you will make design decisions at every step. The agent team you end up with will be yours, shaped by how you study and what you need.</p>
+    <div class="hero-meta">
+      <div class="meta-item">
+        <span class="meta-label">Time</span>
+        <span class="meta-value">3–4 weeks</span>
+      </div>
+      <div class="meta-item">
+        <span class="meta-label">Difficulty</span>
+        <span class="meta-value">Advanced</span>
+      </div>
+      <div class="meta-item">
+        <span class="meta-label">You'll need</span>
+        <span class="meta-value">Claude API key · Basic HTML/JS</span>
+      </div>
+      <div class="meta-item">
+        <span class="meta-label">End result</span>
+        <span class="meta-value">A live, personalised AI study team</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- PART 1 -->
+  <section class="part" id="part1">
+    <div class="part-header">
+      <div class="part-num">01 / 06</div>
+      <div class="part-title-block">
+        <div class="part-eyebrow">Foundations</div>
+        <div class="part-title">What is an agent, really?</div>
+        <p class="part-intro">Before you build anything, you need a clear mental model. Most people think an AI agent is just a smarter chatbot. It isn't. Understanding the difference will shape every decision you make in this project.</p>
+      </div>
+    </div>
+
+    <div class="concept-grid">
+      <div class="concept-card">
+        <div class="concept-icon">💬</div>
+        <div class="concept-name">A chatbot</div>
+        <div class="concept-desc">You open it. You ask a question. It answers. It forgets you the moment you close the tab. Every session starts from zero. No memory, no goals, no continuity.</div>
+      </div>
+      <div class="concept-card">
+        <div class="concept-icon">🤖</div>
+        <div class="concept-name">An agent</div>
+        <div class="concept-desc">Has an identity (who it is and what it cares about). Has memory (what it knows about you over time). Has a job (one specific thing it does well). Can act without you asking.</div>
+      </div>
+      <div class="concept-card">
+        <div class="concept-icon">🏢</div>
+        <div class="concept-name">An agent team</div>
+        <div class="concept-desc">Multiple agents with different specialisms, sharing information through a common memory system. One coordinator routes your questions to whoever is best placed to help.</div>
+      </div>
+    </div>
+
+    <div class="callout insight">
+      <div class="callout-title">The key insight</div>
+      One powerful agent doing everything produces mediocre everything. Six agents each doing one thing produce excellent six things. This is true of human teams too — it's why hospitals have specialists.
+    </div>
+
+    <p style="font-size:15px; color:var(--ink2); line-height:1.7; margin:24px 0;">An agent is built from three parts that work together. Think of these as the skeleton of everything you're about to build:</p>
+
+    <div class="step-list">
+      <div class="step-item">
+        <div class="step-num-circle">A</div>
+        <div class="step-content">
+          <div class="step-title">Identity <span style="font-family:'IBM Plex Mono',monospace;font-size:14px;color:var(--accent)">→ SOUL.md</span></div>
+          <div class="step-body">A document that defines who this agent is — its name, personality, principles, and what it absolutely will not do. This gets loaded at the start of every session as the system prompt. It's the one file that makes an agent consistent across all your conversations.</div>
+        </div>
+      </div>
+      <div class="step-item">
+        <div class="step-num-circle">B</div>
+        <div class="step-content">
+          <div class="step-title">Memory <span style="font-family:'IBM Plex Mono',monospace;font-size:14px;color:var(--blue)">→ profile + session logs</span></div>
+          <div class="step-body">AI has no memory between conversations. So you store it yourself — in plain text files. A profile about you (subjects, HL/SL, EE topic, how you like to be taught). Session logs of what you've discussed. The agent reads these files at the start of each session so it already knows you.</div>
+        </div>
+      </div>
+      <div class="step-item">
+        <div class="step-num-circle">C</div>
+        <div class="step-content">
+          <div class="step-title">A job <span style="font-family:'IBM Plex Mono',monospace;font-size:14px;color:var(--green)">→ one specialisation, one stop condition</span></div>
+          <div class="step-body">Every agent has exactly one job and knows when to stop or hand off. A research agent finds sources — it doesn't write your essay. A wellbeing agent listens — it doesn't give medical advice. Constraints make agents sharper, not weaker.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="callout think">
+      <div class="callout-title">Before you continue — think about this</div>
+      What are the five most repetitive or frustrating things about studying for your DP subjects? Write them down somewhere. Your agent team should solve these specific problems — not a generic student's problems.
+    </div>
+
+    <div class="activity">
+      <div class="activity-header">
+        <span class="activity-badge">✍ Your turn</span>
+        <span class="activity-title">Map your study pain points</span>
+      </div>
+      <div class="activity-body">
+        <p class="activity-prompt">Before designing any agents, be honest about where you actually lose time or feel stuck in your DP studies. List 3–5 specific situations — not vague ("I struggle with maths") but concrete ("I spend 45 mins searching for EE sources and can't tell which are credible"). Your agents will be designed around these.</p>
+        <textarea class="activity-textarea" id="act1" placeholder="1. I spend too long...&#10;2. I never know if my IA analysis is on the right track until it's too late...&#10;3. I forget what I covered in the previous study session and have to recap..."></textarea>
+        <div class="activity-save">
+          <button class="btn-save" onclick="saveActivity('act1', 'p1')">Save my thinking</button>
+          <span class="save-status" id="status-act1">Saved ✓</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="part-complete">
+      <span class="complete-text">✓ You understand what an agent is and why a team beats one big prompt</span>
+      <button class="btn-complete" id="complete-1" onclick="markComplete(1)">Mark Part 1 done →</button>
+    </div>
+  </section>
+
+  <!-- PART 2 -->
+  <section class="part" id="part2">
+    <div class="part-header">
+      <div class="part-num">02 / 06</div>
+      <div class="part-title-block">
+        <div class="part-eyebrow">Architecture</div>
+        <div class="part-title">Design your team</div>
+        <p class="part-intro">Here's a suggested team of five agents. But this is a starting point, not a prescription. After you understand what each agent does, you'll design your own version based on what you actually need.</p>
+      </div>
+    </div>
+
+    <div class="diagram-box">
+      <div class="agent-diagram">
+        <div class="diag-row">
+          <div class="agent-box coordinator">
+            <div class="agent-name">ALEX</div>
+            <div class="agent-role">Coordinator — routes everything</div>
+          </div>
+        </div>
+        <div class="diag-arrow"><div class="diag-line"></div><div class="diag-arrowhead"></div></div>
+        <div class="diag-spread">
+          <div class="spread-item">
+            <div class="spread-drop"></div>
+            <div class="agent-box">
+              <div class="agent-name">DARWIN</div>
+              <div class="agent-role">Research</div>
+            </div>
+          </div>
+          <div class="spread-item">
+            <div class="spread-drop"></div>
+            <div class="agent-box">
+              <div class="agent-name">SAGE</div>
+              <div class="agent-role">Concept tutor</div>
+            </div>
+          </div>
+          <div class="spread-item">
+            <div class="spread-drop"></div>
+            <div class="agent-box">
+              <div class="agent-name">QUILL</div>
+              <div class="agent-role">Essay coach</div>
+            </div>
+          </div>
+          <div class="spread-item">
+            <div class="spread-drop"></div>
+            <div class="agent-box">
+              <div class="agent-name">HAVEN</div>
+              <div class="agent-role">Wellbeing</div>
+            </div>
+          </div>
+          <div class="spread-item">
+            <div class="spread-drop"></div>
+            <div class="agent-box">
+              <div class="agent-name">ATLAS</div>
+              <div class="agent-role">Study planner</div>
+            </div>
+          </div>
+        </div>
+        <div style="margin-top:20px;width:100%;display:flex;flex-direction:column;align-items:center;">
+          <div style="height:20px;width:1px;background:var(--border2);"></div>
+          <div class="memory-bar">📂 shared memory — student-profile.md · session-logs/ · subject-notes/</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="step-list" style="margin-top:32px;">
+      <div class="step-item">
+        <div class="step-num-circle" style="background:var(--accent-dim);border-color:rgba(232,162,58,0.3);color:var(--accent);">A</div>
+        <div class="step-content">
+          <div class="step-title">ALEX — Coordinator</div>
+          <div class="step-body">The only agent you talk to directly. Alex understands your question, checks your profile, and decides which specialist to call. Alex doesn't do the work — Alex manages who does. <em style="color:var(--ink3)">Named after a chief-of-staff personality: strategic, organised, direct.</em></div>
+        </div>
+      </div>
+      <div class="step-item">
+        <div class="step-num-circle">D</div>
+        <div class="step-content">
+          <div class="step-title">DARWIN — Research</div>
+          <div class="step-body">Helps you find and evaluate sources for your EE and IAs. Applies a reliability rubric (author, publisher, date, bias) to every source. Outputs structured source notes, never an essay. Stops the moment you ask it to write anything assessed.</div>
+        </div>
+      </div>
+      <div class="step-item">
+        <div class="step-num-circle">S</div>
+        <div class="step-content">
+          <div class="step-title">SAGE — Concept Tutor</div>
+          <div class="step-body">The patient explainer. Uses your profile to know what you've already covered and what you've struggled with. Explains the same concept three different ways if needed. Never gives you a direct answer to a graded question — asks a guiding question instead. Never moves on until you can explain it back.</div>
+        </div>
+      </div>
+      <div class="step-item">
+        <div class="step-num-circle">Q</div>
+        <div class="step-content">
+          <div class="step-title">QUILL — Essay Coach</div>
+          <div class="step-body">Gives criterion-by-criterion feedback using the actual IB rubric for your subject. Marks your argument, your evidence use, your structure. Never rewrites your sentences — points at them and asks "what did you mean here?" Knows the difference between a History HL essay and a Language A commentary.</div>
+        </div>
+      </div>
+      <div class="step-item">
+        <div class="step-num-circle">H</div>
+        <div class="step-content">
+          <div class="step-title">HAVEN — Wellbeing</div>
+          <div class="step-body">A low-pressure check-in. Listens without fixing. Helps you name what you're feeling and find one thing you can control. Never gives medical advice. Always points back to real humans (counsellor, parents, teacher) when it senses real distress. The most important agent — and the one most students will need.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="callout warning">
+      <div class="callout-title">Don't build all five on day one</div>
+      Start with ALEX and SAGE. Get those two working well for one week. Then add DARWIN. Then QUILL. HAVEN requires extra care — design it last when you have a feel for how the others behave.
+    </div>
+
+    <div class="activity">
+      <div class="activity-header">
+        <span class="activity-badge">✍ Your turn</span>
+        <span class="activity-title">Design your own team</span>
+      </div>
+      <div class="activity-body">
+        <p class="activity-prompt">You don't have to use the names or roles above. Based on your pain points from Part 1, design your own team. Give each agent: a name, a one-sentence job description, and one thing it must never do. You need at minimum a coordinator and one specialist. Aim for 3–5 agents total.</p>
+        <textarea class="activity-textarea" id="act2" style="min-height:180px;" placeholder="COORDINATOR: [Name] — routes questions to the right specialist&#10;&#10;AGENT 1: [Name] — [job]. Must never: [boundary]&#10;&#10;AGENT 2: [Name] — [job]. Must never: [boundary]&#10;&#10;AGENT 3: ..."></textarea>
+        <div class="activity-save">
+          <button class="btn-save" onclick="saveActivity('act2', 'p2')">Save my team design</button>
+          <span class="save-status" id="status-act2">Saved ✓</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="part-complete">
+      <span class="complete-text">✓ You have a team structure with named agents and clear roles</span>
+      <button class="btn-complete" id="complete-2" onclick="markComplete(2)">Mark Part 2 done →</button>
+    </div>
+  </section>
+
+  <!-- PART 3 -->
+  <section class="part" id="part3">
+    <div class="part-header">
+      <div class="part-num">03 / 06</div>
+      <div class="part-title-block">
+        <div class="part-eyebrow">Identity</div>
+        <div class="part-title">Write the SOUL files</div>
+        <p class="part-intro">A SOUL.md is the single most important file in your entire system. It's 40–60 lines of plain text that defines who an agent is. Every session, it gets loaded as the system prompt — it's the agent's permanent personality, before any conversation starts.</p>
+      </div>
+    </div>
+
+    <p style="font-size:15px;color:var(--ink2);line-height:1.7;margin-bottom:24px;">Here's the anatomy of a well-written SOUL file. Study this before you write your own:</p>
+
+    <div class="code-block">
+      <div class="code-header">
+        <span class="code-filename">agents/alex/SOUL.md</span>
+        <span class="code-lang">Markdown</span>
+      </div>
+      <div class="code-body"><pre><span class="c-comment"># SOUL.md — ALEX</span>
+<span class="c-comment"># The coordinator. The first agent the student talks to.</span>
+
+<span class="c-key">## Who you are</span>
+
+<span class="c-str">ALEX</span> — calm, strategic, slightly dry sense of humour.
+You are [student name]'s chief of staff for the Diploma Programme.
+You never panic. You always have a plan.
+
+<span class="c-key">## Your job</span>
+
+You receive every message the student sends. You decide who handles it:
+- Research question or source-finding → DARWIN
+- Stuck on a concept or needs something explained → SAGE
+- Essay feedback or IB rubric question → QUILL  
+- Stressed, overwhelmed, needs to talk → HAVEN
+- Deadline planning or schedule help → ATLAS
+- Anything else, or unclear → you handle it yourself
+
+<span class="c-key">## How you respond</span>
+
+Short. Direct. No filler words like "Certainly!" or "Great question!".
+If you're delegating, say who you're passing to and why.
+If you're handling it yourself, just answer.
+
+<span class="c-key">## What you never do</span>
+
+- Never write assessed work for the student. Not a sentence, not a paragraph.
+- Never pretend to be certain when you're not.
+- Never ignore the student's profile — always check it before responding.
+
+<span class="c-key">## Student profile location</span>
+
+Always read <span class="c-str">memory/student-profile.md</span> at the start of every session.
+This tells you: subjects, HL/SL, EE topic, current stress level, how they like to learn.</pre></div>
+    </div>
+
+    <p style="font-size:15px;color:var(--ink2);line-height:1.7;margin:24px 0;">Notice what this file does and doesn't do. It gives ALEX a personality and tone, a routing map, explicit rules, and a stop condition. It doesn't try to make ALEX good at everything — it makes ALEX good at <em>one thing</em>: knowing who to call.</p>
+
+    <div class="callout tip">
+      <div class="callout-title">The naming trick</div>
+      Giving agents character names (not just "Research Agent") gives the AI a personality baseline from its training data. "Calm and strategic" is abstract. "Thinks like a good chief of staff" triggers something richer. Experiment with what resonates for you.
+    </div>
+
+    <p style="font-size:15px;color:var(--ink2);line-height:1.7;margin:24px 0;">Here's the SOUL file for SAGE — notice how it's shaped differently for a teaching role:</p>
+
+    <div class="code-block">
+      <div class="code-header">
+        <span class="code-filename">agents/sage/SOUL.md</span>
+        <span class="code-lang">Markdown</span>
+      </div>
+      <div class="code-body"><pre><span class="c-comment"># SOUL.md — SAGE</span>
+<span class="c-comment"># The concept tutor. Patient, adaptive, Socratic.</span>
+
+<span class="c-key">## Who you are</span>
+
+<span class="c-str">SAGE</span> — the most patient teacher the student has ever had.
+You have never said "that's a simple question." You never will.
+You believe any concept can be explained clearly if you find the right angle.
+
+<span class="c-key">## Your job</span>
+
+When a student doesn't understand something, you explain it.
+You adapt to what they already know (check their profile first).
+You use analogies grounded in their interests, not generic examples.
+You check for understanding before moving on.
+
+<span class="c-key">## Your method</span>
+
+1. First: ask what they already know about the concept.
+2. Explain at the right level — not too basic, not overwhelming.
+3. Use one concrete analogy or real-world example.
+4. Ask them to explain it back to you in their own words.
+5. Only when they can do step 4 are you done.
+
+<span class="c-key">## What you never do</span>
+
+- Never give a direct answer to a question that is part of assessed work.
+  Instead, ask: "What do you think the answer might be, and why?"
+- Never say "you should already know this."
+- Never give a five-paragraph explanation when two sentences will do.
+- Never pretend you explained something well if the student is still confused.
+
+<span class="c-key">## Memory</span>
+
+Before each session, read:
+- <span class="c-str">memory/student-profile.md</span> — their subjects, level, and learning style
+- <span class="c-str">memory/session-logs/sage-log.md</span> — what topics you've already covered
+  and what the student struggled with previously</pre></div>
+    </div>
+
+    <div class="callout insight">
+      <div class="callout-title">Why the "never" rules matter</div>
+      An agent without stop conditions will drift toward being helpful in ways that cross lines. SAGE without a "never" rule might write a paragraph for a student's IA because it "feels helpful." The constraints are what make the agent trustworthy — for you and for your teachers.
+    </div>
+
+    <div class="activity">
+      <div class="activity-header">
+        <span class="activity-badge">✍ Your turn</span>
+        <span class="activity-title">Write your coordinator's SOUL.md</span>
+      </div>
+      <div class="activity-body">
+        <p class="activity-prompt">Write the full SOUL.md for your coordinator agent. Use the structure above: who they are, their job, how they respond, what they never do, where to find the memory files. This should be 40–60 lines. Don't copy the examples above — write it for your agent, your subjects, your needs. The personality should feel like someone you'd actually want to work with.</p>
+        <textarea class="activity-textarea" id="act3" style="min-height:280px;" placeholder="# SOUL.md — [YOUR COORDINATOR NAME]&#10;&#10;## Who you are&#10;&#10;[Name] — [personality in 2 sentences]&#10;&#10;## Your job&#10;&#10;[What they receive, who they route to, what they handle themselves]&#10;&#10;## How you respond&#10;&#10;[Tone, length, style]&#10;&#10;## What you never do&#10;&#10;- ...&#10;&#10;## Memory location&#10;&#10;Read [path] at the start of every session."></textarea>
+        <div class="activity-save">
+          <button class="btn-save" onclick="saveActivity('act3', 'p3')">Save my SOUL.md</button>
+          <span class="save-status" id="status-act3">Saved ✓</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="part-complete">
+      <span class="complete-text">✓ You have written at least one complete SOUL.md file</span>
+      <button class="btn-complete" id="complete-3" onclick="markComplete(3)">Mark Part 3 done →</button>
+    </div>
+  </section>
+
+  <!-- PART 4 -->
+  <section class="part" id="part4">
+    <div class="part-header">
+      <div class="part-num">04 / 06</div>
+      <div class="part-title-block">
+        <div class="part-eyebrow">Memory</div>
+        <div class="part-title">Build the memory system</div>
+        <p class="part-intro">AI models have no memory between conversations. That means every time you start a new session, your agent is meeting you for the first time. The solution is simple — you store the memory yourself in text files, and the agent reads them at the start of each session.</p>
+      </div>
+    </div>
+
+    <p style="font-size:15px;color:var(--ink2);line-height:1.7;margin-bottom:8px;">Your project will have this file structure. Every file under <code>memory/</code> is memory your agents can read:</p>
+
+    <div class="file-tree">
+      <div class="tree-line folder">📁 dp-agent-team/</div>
+      <div class="tree-line folder"><span class="tree-indent">├── 📁 agents/</span></div>
+      <div class="tree-line"><span class="tree-indent">│   ├── 📁 alex/</span> → SOUL.md</div>
+      <div class="tree-line"><span class="tree-indent">│   ├── 📁 sage/</span> → SOUL.md</div>
+      <div class="tree-line"><span class="tree-indent">│   └── 📁 darwin/</span> → SOUL.md</div>
+      <div class="tree-line folder"><span class="tree-indent">├── 📁 memory/</span></div>
+      <div class="tree-line highlight"><span class="tree-indent">│   ├── 📄 student-profile.md</span><span class="tree-desc">← the most important file</span></div>
+      <div class="tree-line"><span class="tree-indent">│   ├── 📄 session-log.md</span><span class="tree-desc">← running notes from all sessions</span></div>
+      <div class="tree-line"><span class="tree-indent">│   └── 📄 subject-notes.md</span><span class="tree-desc">← concepts, EE progress, IA status</span></div>
+      <div class="tree-line folder"><span class="tree-indent">├── 📁 src/</span></div>
+      <div class="tree-line"><span class="tree-indent">│   └── 📄 app.js</span><span class="tree-desc">← your main application code</span></div>
+      <div class="tree-line"><span class="tree-indent">└── 📄 index.html</span></div>
+    </div>
+
+    <p style="font-size:15px;color:var(--ink2);line-height:1.7;margin:24px 0 12px;">The <code>student-profile.md</code> is loaded into every agent's context. Here's what it should contain — and a template you'll fill in:</p>
+
+    <div class="code-block">
+      <div class="code-header">
+        <span class="code-filename">memory/student-profile.md</span>
+        <span class="code-lang">Template</span>
+      </div>
+      <div class="code-body"><pre><span class="c-comment"># Student Profile</span>
+<span class="c-comment"># Agents read this at the start of every session.</span>
+<span class="c-comment"># Keep it honest and keep it updated.</span>
+
+<span class="c-key">## Subjects</span>
+HL: [e.g. History, English A Lit, Biology]
+SL: [e.g. Maths AI, Spanish B, Economics]
+
+<span class="c-key">## Extended Essay</span>
+Subject: [e.g. History]
+Research question: [your RQ, even if it's still draft]
+Current stage: [brainstorming / first draft / supervisor feedback / final]
+
+<span class="c-key">## How I learn best</span>
+[e.g. "I need examples before theory. I get frustrated with vague feedback.
+I work best in short bursts. I tend to overthink essay structure."]
+
+<span class="c-key">## Current pressure points</span>
+[Update this weekly — what's due soon, what's causing most stress]
+
+<span class="c-key">## What I've covered with each agent</span>
+SAGE: [topics explained so far]
+DARWIN: [sources found, research threads active]
+QUILL: [essays reviewed, feedback patterns]
+
+<span class="c-key">## What agents should know about me</span>
+[Anything else that helps — e.g. "I tend to ask the same question
+multiple ways when I'm confused. Don't give up on me."]</pre></div>
+    </div>
+
+    <div class="callout tip">
+      <div class="callout-title">Update this file every Sunday</div>
+      The profile only works if it reflects where you actually are, not where you were in September. Add it to your weekly routine: 10 minutes every Sunday to update your profile and session log. The agents get measurably better the richer this file becomes.
+    </div>
+
+    <p style="font-size:15px;color:var(--ink2);line-height:1.7;margin:24px 0 12px;">The <code>session-log.md</code> is simpler — just running notes. After each meaningful session, add a short entry:</p>
+
+    <div class="code-block">
+      <div class="code-header">
+        <span class="code-filename">memory/session-log.md</span>
+        <span class="code-lang">Example entries</span>
+      </div>
+      <div class="code-body"><pre><span class="c-comment">## 2025-09-14</span>
+SAGE explained the Hardy-Weinberg equilibrium — finally got it using
+the allele frequency analogy. Still shaky on when to apply it.
+
+<span class="c-comment">## 2025-09-17</span>
+DARWIN helped find 4 sources on Cold War proxy conflicts for EE.
+Primary source from Kennan archives looks strong. Need to verify date.
+
+<span class="c-comment">## 2025-09-20</span>
+QUILL gave feedback on History essay intro — said my thesis doesn't
+take a clear enough position. Rewrote it. Much better apparently.</pre></div>
+    </div>
+
+    <div class="activity">
+      <div class="activity-header">
+        <span class="activity-badge">✍ Your turn</span>
+        <span class="activity-title">Write your student-profile.md</span>
+      </div>
+      <div class="activity-body">
+        <p class="activity-prompt">Fill in your actual student profile below. This isn't a school form — write it for an agent that needs to understand you as a learner. Be specific about how you learn, what frustrates you, and where you are right now. This will be the first file your agents read.</p>
+        <textarea class="activity-textarea" id="act4" style="min-height:240px;" placeholder="# Student Profile&#10;&#10;## Subjects&#10;HL: &#10;SL: &#10;&#10;## Extended Essay&#10;Subject: &#10;Research question: &#10;Current stage: &#10;&#10;## How I learn best&#10;&#10;## Current pressure points&#10;&#10;## What agents should know about me"></textarea>
+        <div class="activity-save">
+          <button class="btn-save" onclick="saveActivity('act4', 'p4')">Save my profile</button>
+          <span class="save-status" id="status-act4">Saved ✓</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="part-complete">
+      <span class="complete-text">✓ You have a working memory system and a complete student profile</span>
+      <button class="btn-complete" id="complete-4" onclick="markComplete(4)">Mark Part 4 done →</button>
+    </div>
+  </section>
+
+  <!-- PART 5 -->
+  <section class="part" id="part5">
+    <div class="part-header">
+      <div class="part-num">05 / 06</div>
+      <div class="part-title-block">
+        <div class="part-eyebrow">Code</div>
+        <div class="part-title">Your first API call</div>
+        <p class="part-intro">Now we connect everything to Claude. This is the only code you need to understand to build the whole system. Read it slowly — every line has a comment explaining why it's there, not just what it does.</p>
+      </div>
+    </div>
+
+    <div class="callout insight">
+      <div class="callout-title">Get your API key first</div>
+      Go to <strong style="color:var(--blue)">console.anthropic.com</strong> → API Keys → Create Key. Keep it secret — never paste it into public code or push it to GitHub. Store it in a <code>.env</code> file locally.
+    </div>
+
+    <p style="font-size:15px;color:var(--ink2);line-height:1.7;margin:24px 0 12px;">This is the core function that powers every agent. Understand this and you understand the whole system:</p>
+
+    <div class="code-block">
+      <div class="code-header">
+        <span class="code-filename">src/agent.js</span>
+        <span class="code-lang">JavaScript</span>
+      </div>
+      <div class="code-body"><pre><span class="c-comment">// Every agent in your team runs through this one function.</span>
+<span class="c-comment">// The only thing that changes between agents is:</span>
+<span class="c-comment">// 1. The soulContent (who the agent is)</span>
+<span class="c-comment">// 2. The profileContent (what the agent knows about you)</span>
+
+<span class="c-kw">async function</span> <span class="c-fn">askAgent</span>(agentName, userMessage, soulContent, profileContent) {
+
+  <span class="c-comment">// Build the system prompt by combining:</span>
+  <span class="c-comment">// → the agent's identity (SOUL.md)</span>
+  <span class="c-comment">// → everything the agent knows about you (memory files)</span>
+  <span class="c-kw">const</span> systemPrompt = <span class="c-str">`</span><span class="c-str">${soulContent}</span>
+
+<span class="c-str">---</span>
+<span class="c-str">STUDENT PROFILE (read this before every response):</span>
+<span class="c-str">${profileContent}</span>
+<span class="c-str">`</span>;
+
+  <span class="c-comment">// Make the API call to Claude</span>
+  <span class="c-kw">const</span> response = <span class="c-kw">await</span> <span class="c-fn">fetch</span>(<span class="c-str">"https://api.anthropic.com/v1/messages"</span>, {
+    method: <span class="c-str">"POST"</span>,
+    headers: {
+      <span class="c-str">"Content-Type"</span>: <span class="c-str">"application/json"</span>,
+      <span class="c-comment">// API key goes here — loaded from environment, never hardcoded</span>
+      <span class="c-str">"x-api-key"</span>: process.env.ANTHROPIC_API_KEY,
+      <span class="c-str">"anthropic-version"</span>: <span class="c-str">"2023-06-01"</span>
+    },
+    body: <span class="c-fn">JSON.stringify</span>({
+      model: <span class="c-str">"claude-sonnet-4-20250514"</span>,
+      max_tokens: <span class="c-num">1024</span>,
+      system: systemPrompt,         <span class="c-comment">// ← agent identity + your profile</span>
+      messages: [
+        { role: <span class="c-str">"user"</span>, content: userMessage }  <span class="c-comment">// ← what you just typed</span>
+      ]
+    })
+  });
+
+  <span class="c-kw">const</span> data = <span class="c-kw">await</span> response.<span class="c-fn">json</span>();
+
+  <span class="c-comment">// Extract the text response from Claude's reply</span>
+  <span class="c-kw">return</span> data.content[<span class="c-num">0</span>].text;
+}
+
+<span class="c-comment">// Example: ask SAGE a question</span>
+<span class="c-comment">// soulContent = contents of agents/sage/SOUL.md</span>
+<span class="c-comment">// profileContent = contents of memory/student-profile.md</span>
+<span class="c-kw">const</span> reply = <span class="c-kw">await</span> <span class="c-fn">askAgent</span>(
+  <span class="c-str">"sage"</span>,
+  <span class="c-str">"I don't understand what activation energy means in Chemistry"</span>,
+  soulContent,
+  profileContent
+);</pre></div>
+    </div>
+
+    <p style="font-size:15px;color:var(--ink2);line-height:1.7;margin:24px 0 12px;">The coordinator (ALEX) needs one extra thing: routing logic. When ALEX gets a message, it decides which agent to call next:</p>
+
+    <div class="code-block">
+      <div class="code-header">
+        <span class="code-filename">src/coordinator.js</span>
+        <span class="code-lang">JavaScript</span>
+      </div>
+      <div class="code-body"><pre><span class="c-comment">// ALEX receives every message and decides what to do.</span>
+<span class="c-comment">// We ask Claude (as ALEX) to return a routing decision,</span>
+<span class="c-comment">// then we call the right specialist agent.</span>
+
+<span class="c-kw">async function</span> <span class="c-fn">routeMessage</span>(userMessage) {
+
+  <span class="c-comment">// First: ask ALEX what to do with this message</span>
+  <span class="c-kw">const</span> routingPrompt = <span class="c-str">`
+    Based on this message, respond with ONLY one of these words:
+    DARWIN, SAGE, QUILL, HAVEN, ATLAS, or SELF
+    (SELF means you will handle it directly as ALEX)
+    
+    Message: "</span><span class="c-str">${userMessage}</span><span class="c-str">"
+  `</span>;
+
+  <span class="c-kw">const</span> decision = <span class="c-kw">await</span> <span class="c-fn">askAgent</span>(<span class="c-str">"alex"</span>, routingPrompt, alexSoul, profile);
+  <span class="c-kw">const</span> agent = decision.<span class="c-fn">trim</span>().<span class="c-fn">toUpperCase</span>();
+
+  <span class="c-comment">// Second: call the right specialist with the original message</span>
+  <span class="c-kw">switch</span>(agent) {
+    <span class="c-kw">case</span> <span class="c-str">"SAGE"</span>:   <span class="c-kw">return</span> <span class="c-fn">askAgent</span>(<span class="c-str">"sage"</span>,   userMessage, sageSoul,   profile);
+    <span class="c-kw">case</span> <span class="c-str">"DARWIN"</span>: <span class="c-kw">return</span> <span class="c-fn">askAgent</span>(<span class="c-str">"darwin"</span>, userMessage, darwinSoul, profile);
+    <span class="c-kw">case</span> <span class="c-str">"QUILL"</span>:  <span class="c-kw">return</span> <span class="c-fn">askAgent</span>(<span class="c-str">"quill"</span>,  userMessage, quillSoul,  profile);
+    <span class="c-kw">case</span> <span class="c-str">"HAVEN"</span>:  <span class="c-kw">return</span> <span class="c-fn">askAgent</span>(<span class="c-str">"haven"</span>,  userMessage, havenSoul,  profile);
+    <span class="c-kw">default</span>:      <span class="c-kw">return</span> <span class="c-fn">askAgent</span>(<span class="c-str">"alex"</span>,   userMessage, alexSoul,   profile);
+  }
+}</pre></div>
+    </div>
+
+    <div class="callout warning">
+      <div class="callout-title">Test each agent alone first</div>
+      Before you build the routing, test each agent's SOUL.md directly. Ask SAGE a question. Check it responds like SAGE should. Ask it something it shouldn't answer — does it refuse? Only wire up the coordinator once each specialist works correctly on its own.
+    </div>
+
+    <div class="activity">
+      <div class="activity-header">
+        <span class="activity-badge">✍ Your turn</span>
+        <span class="activity-title">Annotate the code — in your own words</span>
+      </div>
+      <div class="activity-body">
+        <p class="activity-prompt">Don't copy-paste and run. First, write out what the <code>askAgent</code> function does in plain English, step by step. Then write one question you have about any line of the code — something you genuinely don't understand yet. This is how you'll know whether you can build on it.</p>
+        <textarea class="activity-textarea" id="act5" placeholder="In plain English, askAgent does:&#10;1. ...&#10;2. ...&#10;3. ...&#10;&#10;One thing I don't understand yet:&#10;...&#10;&#10;What I'd modify in this code for my own team:&#10;..."></textarea>
+        <div class="activity-save">
+          <button class="btn-save" onclick="saveActivity('act5', 'p5')">Save my notes</button>
+          <span class="save-status" id="status-act5">Saved ✓</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="part-complete">
+      <span class="complete-text">✓ You understand the core API call and routing logic</span>
+      <button class="btn-complete" id="complete-5" onclick="markComplete(5)">Mark Part 5 done →</button>
+    </div>
+  </section>
+
+  <!-- PART 6 -->
+  <section class="part" id="part6">
+    <div class="part-header">
+      <div class="part-num">06 / 06</div>
+      <div class="part-title-block">
+        <div class="part-eyebrow">Deploy</div>
+        <div class="part-title">Connect everything and go live</div>
+        <p class="part-intro">The last part is connecting the pieces into a working interface and deploying it. By this point you have: SOUL files for your agents, a student profile in memory, and an understanding of the core API call. Now you build the UI and ship it.</p>
+      </div>
+    </div>
+
+    <div class="step-list">
+      <div class="step-item">
+        <div class="step-num-circle">1</div>
+        <div class="step-content">
+          <div class="step-title">Build a minimal chat UI</div>
+          <div class="step-body">You only need three elements: a text input for your message, a send button, and a conversation display. Keep it simple — the intelligence is in the agents, not the interface. A clean HTML page with a textarea, a button, and a div that fills with conversation history is enough.</div>
+        </div>
+      </div>
+      <div class="step-item">
+        <div class="step-num-circle">2</div>
+        <div class="step-content">
+          <div class="step-title">Load your files on startup</div>
+          <div class="step-body">When the page loads, read all your SOUL.md files and your <code>student-profile.md</code> into JavaScript variables. These get passed into every <code>askAgent()</code> call. In a browser environment, you can store them as JavaScript string constants — or fetch them from your project folder.</div>
+        </div>
+      </div>
+      <div class="step-item">
+        <div class="step-num-circle">3</div>
+        <div class="step-content">
+          <div class="step-title">Wire up the send button</div>
+          <div class="step-body">On click: take the message, pass it to <code>routeMessage()</code>, wait for the response, display it in the conversation area. Show which agent responded — e.g. "SAGE →" before the reply. This helps you understand the routing and debug it when something goes to the wrong agent.</div>
+        </div>
+      </div>
+      <div class="step-item">
+        <div class="step-num-circle">4</div>
+        <div class="step-content">
+          <div class="step-title">Keep conversation history</div>
+          <div class="step-body">Store a <code>conversationHistory</code> array and pass it back to Claude with each call. This is how Claude remembers what was said earlier in the same session. Each message is <code>&#123;role: "user", content: "..."&#125;</code> or <code>&#123;role: "assistant", content: "..."&#125;</code>. Clear it when you start a new session.</div>
+        </div>
+      </div>
+      <div class="step-item">
+        <div class="step-num-circle">5</div>
+        <div class="step-content">
+          <div class="step-title">Handle the API key safely</div>
+          <div class="step-body">Never put your API key in your HTML or JavaScript file. For a Netlify deploy, use <strong>Netlify Environment Variables</strong> (Site settings → Environment variables) and call the API through a Netlify Function (serverless) that reads the key from <code>process.env</code>. Your key stays private; the browser never sees it.</div>
+        </div>
+      </div>
+    </div>
+
+    <p style="font-size:15px;color:var(--ink2);line-height:1.7;margin:24px 0 12px;">Deploying to Netlify:</p>
+
+    <div class="deploy-steps">
+      <div class="deploy-step">
+        <div class="deploy-step-text"><strong>Create a Netlify account</strong> at netlify.com — free tier is all you need.</div>
+      </div>
+      <div class="deploy-step">
+        <div class="deploy-step-text"><strong>Push your project to GitHub</strong> — Netlify connects to your repo and auto-deploys on every commit.</div>
+      </div>
+      <div class="deploy-step">
+        <div class="deploy-step-text"><strong>Add your API key</strong> — Site settings → Environment variables → Add <code>ANTHROPIC_API_KEY</code>.</div>
+      </div>
+      <div class="deploy-step">
+        <div class="deploy-step-text"><strong>Create a Netlify Function</strong> in <code>netlify/functions/chat.js</code> — this is your secure API proxy that the browser calls.</div>
+      </div>
+      <div class="deploy-step">
+        <div class="deploy-step-text"><strong>Deploy</strong> — push to main and your site is live at <code>yourname.netlify.app</code> in about 30 seconds.</div>
+      </div>
+    </div>
+
+    <div class="callout think">
+      <div class="callout-title">What does a good first week look like?</div>
+      Use it for real studying — not just to test. Ask SAGE something you're actually stuck on. Update your session log after. Notice what the agents do well and what feels off. Your first round of corrections to the SOUL files will be the most valuable thing you do in the whole project.
+    </div>
+
+    <div class="activity">
+      <div class="activity-header">
+        <span class="activity-badge">✍ Your turn</span>
+        <span class="activity-title">Write your launch plan</span>
+      </div>
+      <div class="activity-body">
+        <p class="activity-prompt">Before you close this guide, write a concrete 2-week launch plan. What will you build in week 1? Which agent goes live first? How will you know it's working? What's the first real studying task you'll use it for? Be specific enough that you could hand this to someone else and they'd know exactly what you're planning.</p>
+        <textarea class="activity-textarea" id="act6" style="min-height:200px;" placeholder="Week 1 goal: Get [agent name] working with my student profile.&#10;First real task I'll use it for: ...&#10;&#10;Week 2 goal: Add [agent name] and connect them.&#10;&#10;How I'll know it's actually useful (not just impressive): ...&#10;&#10;One thing I might get stuck on: ...&#10;How I'll get unstuck: ..."></textarea>
+        <div class="activity-save">
+          <button class="btn-save" onclick="saveActivity('act6', 'p6')">Save my launch plan</button>
+          <span class="save-status" id="status-act6">Saved ✓</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="part-complete" style="background:var(--accent-dim);border-color:rgba(232,162,58,0.3);">
+      <span class="complete-text" style="color:var(--accent)">🎉 Blueprint complete — you're ready to build</span>
+      <button class="btn-complete" id="complete-6" onclick="markComplete(6)" style="background:var(--accent);">Start building →</button>
+    </div>
+  </section>
+
+</main>
+
+<script>
+const STORAGE_KEY = 'dp_blueprint_progress';
+
+function loadState() {
+  try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || { completed: [], activities: {} }; }
+  catch { return { completed: [], activities: {} }; }
+}
+
+function saveState(state) {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+}
+
+function saveActivity(textareaId, partId) {
+  const val = document.getElementById(textareaId).value;
+  const state = loadState();
+  state.activities[textareaId] = val;
+  saveState(state);
+  const status = document.getElementById('status-' + textareaId);
+  status.classList.add('visible');
+  setTimeout(() => status.classList.remove('visible'), 2000);
+}
+
+function markComplete(num) {
+  const state = loadState();
+  if (!state.completed.includes(num)) state.completed.push(num);
+  saveState(state);
+  updateUI(state);
+  if (num < 6) {
+    const next = document.getElementById('part' + (num));
+    if (next) setTimeout(() => next.scrollIntoView({ behavior: 'smooth', block: 'start' }), 300);
+  }
+}
+
+function updateUI(state) {
+  const total = 6;
+  const done = state.completed.length;
+  const pct = Math.round((done / total) * 100);
+
+  document.getElementById('progress-fill').style.width = pct + '%';
+  document.getElementById('progress-pct').textContent = pct + '%';
+
+  state.completed.forEach(num => {
+    const btn = document.getElementById('complete-' + num);
+    if (btn) { btn.textContent = '✓ Done'; btn.classList.add('done'); }
+    const navItem = document.querySelector(`[data-part="${num}"]`);
+    if (navItem) navItem.classList.add('done');
+  });
+
+  Object.entries(state.activities).forEach(([id, val]) => {
+    const el = document.getElementById(id);
+    if (el && val) el.value = val;
+  });
+}
+
+// Scroll-based nav highlighting
+function updateNavHighlight() {
+  const parts = document.querySelectorAll('.part, .hero');
+  const navItems = document.querySelectorAll('.nav-item[data-part]');
+  let current = '0';
+
+  parts.forEach(part => {
+    const rect = part.getBoundingClientRect();
+    if (rect.top <= 120) {
+      const id = part.id;
+      const match = id.match(/part(\d+)/);
+      if (match) current = match[1];
+    }
+  });
+
+  navItems.forEach(item => {
+    item.classList.remove('active');
+    if (item.dataset.part === current) item.classList.add('active');
+  });
+
+  // Update top progress bar
+  const scrollTop = window.scrollY;
+  const docHeight = document.body.scrollHeight - window.innerHeight;
+  const scrollPct = docHeight > 0 ? (scrollTop / docHeight) * 100 : 0;
+  document.getElementById('progress-bar').style.width = scrollPct + '%';
+}
+
+window.addEventListener('scroll', updateNavHighlight, { passive: true });
+
+// Init
+const state = loadState();
+updateUI(state);
+updateNavHighlight();
+</script>
+</body>
+</html>
