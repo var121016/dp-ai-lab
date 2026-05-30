@@ -1,0 +1,686 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Blueprint: Essay Rubric Coach — DP AI Lab</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:ital,wght@0,400;0,500;1,400&family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,600;0,9..144,700;1,9..144,300;1,9..144,600&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:#0d0c0b; --surface:#161513; --surface2:#1e1c1a;
+  --border:#2a2724; --border2:#3a3632;
+  --ink:#f0ece4; --ink2:#a09890; --ink3:#605a54;
+  --accent:#7eb8f7; --accent-dim:rgba(126,184,247,0.1);
+  --green:#4dba87; --green-dim:rgba(77,186,135,0.1);
+  --amber:#e8a23a; --amber-dim:rgba(232,162,58,0.1);
+  --red:#e05c5c; --red-dim:rgba(224,92,92,0.1);
+  --purple:#b07ef8; --purple-dim:rgba(176,126,248,0.1);
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+html { scroll-behavior:smooth; }
+body { font-family:'DM Sans',sans-serif; background:var(--bg); color:var(--ink); min-height:100vh; line-height:1.7; }
+
+#progress-bar { position:fixed; top:0; left:0; height:3px; background:var(--accent); width:0%; z-index:1000; transition:width 0.3s; }
+
+/* SIDEBAR */
+.sidebar {
+  position:fixed; left:0; top:0; bottom:0; width:240px;
+  background:var(--surface); border-right:1px solid var(--border);
+  padding:32px 0; z-index:100; display:flex; flex-direction:column; overflow-y:auto;
+}
+.sidebar-logo { padding:0 24px 24px; border-bottom:1px solid var(--border); margin-bottom:24px; }
+.sidebar-logo a { font-family:'IBM Plex Mono',monospace; font-size:12px; color:var(--ink3); text-decoration:none; display:block; margin-bottom:8px; transition:color .15s; }
+.sidebar-logo a:hover { color:var(--ink2); }
+.sidebar-title { font-family:'Fraunces',serif; font-size:15px; font-weight:600; color:var(--ink); line-height:1.3; }
+.nav-section { padding:0 16px; margin-bottom:8px; }
+.nav-label { font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:.12em; text-transform:uppercase; color:var(--ink3); padding:0 8px; margin-bottom:6px; }
+.nav-item { display:flex; align-items:center; gap:10px; padding:8px 10px; border-radius:8px; cursor:pointer; text-decoration:none; color:var(--ink2); font-size:13px; transition:background .15s; }
+.nav-item:hover { background:var(--surface2); color:var(--ink); }
+.nav-item.active { background:var(--accent-dim); color:var(--accent); }
+.nav-item.done .nav-dot { border-color:var(--green); background:var(--green); }
+.nav-item.active .nav-dot { border-color:var(--accent); background:var(--accent); }
+.nav-dot { width:7px; height:7px; border-radius:50%; border:1.5px solid var(--ink3); flex-shrink:0; transition:all .15s; }
+.nav-progress { padding:16px 24px; margin-top:auto; border-top:1px solid var(--border); }
+.progress-label { font-family:'IBM Plex Mono',monospace; font-size:11px; color:var(--ink3); margin-bottom:8px; display:flex; justify-content:space-between; }
+.progress-track { height:4px; background:var(--border2); border-radius:2px; overflow:hidden; }
+.progress-fill { height:100%; background:var(--green); border-radius:2px; transition:width .4s; width:0%; }
+
+/* MAIN */
+.main { margin-left:240px; min-height:100vh; }
+
+/* HERO */
+.hero { padding:64px 80px 56px; border-bottom:1px solid var(--border); position:relative; overflow:hidden; }
+.hero::before { content:''; position:absolute; top:-80px; right:-80px; width:400px; height:400px; background:radial-gradient(circle,rgba(126,184,247,0.05) 0%,transparent 70%); pointer-events:none; }
+.hero-badge { display:inline-flex; align-items:center; gap:8px; font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:.1em; text-transform:uppercase; color:var(--accent); background:var(--accent-dim); border:1px solid rgba(126,184,247,0.2); padding:5px 12px; border-radius:100px; margin-bottom:28px; }
+.hero h1 { font-family:'Fraunces',serif; font-size:clamp(36px,4vw,52px); font-weight:700; line-height:1.1; letter-spacing:-.02em; margin-bottom:20px; }
+.hero h1 em { font-style:italic; font-weight:300; color:var(--ink2); }
+.hero-desc { font-size:17px; line-height:1.7; color:var(--ink2); max-width:580px; margin-bottom:36px; }
+.hero-meta { display:flex; gap:32px; flex-wrap:wrap; }
+.meta-item { display:flex; flex-direction:column; gap:3px; }
+.meta-label { font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:.1em; text-transform:uppercase; color:var(--ink3); }
+.meta-value { font-size:14px; font-weight:500; color:var(--ink); }
+
+/* PARTS */
+.part { border-bottom:1px solid var(--border); padding:64px 80px; scroll-margin-top:24px; }
+.part-header { display:flex; align-items:flex-start; gap:20px; margin-bottom:40px; }
+.part-num { font-family:'IBM Plex Mono',monospace; font-size:11px; color:var(--ink3); margin-top:6px; min-width:48px; }
+.part-eyebrow { font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:.1em; text-transform:uppercase; color:var(--accent); margin-bottom:8px; }
+.part-title { font-family:'Fraunces',serif; font-size:clamp(26px,3vw,34px); font-weight:600; letter-spacing:-.02em; line-height:1.2; margin-bottom:12px; }
+.part-intro { font-size:16px; line-height:1.7; color:var(--ink2); max-width:640px; }
+
+/* BODY TEXT */
+.body-text { font-size:15px; line-height:1.75; color:var(--ink2); margin:20px 0; max-width:640px; }
+
+/* CALLOUTS */
+.callout { border-radius:0; padding:16px 20px; margin:24px 0; font-size:14px; line-height:1.6; border-left:3px solid; }
+.callout-title { font-weight:600; font-size:12px; letter-spacing:.06em; text-transform:uppercase; margin-bottom:6px; font-family:'IBM Plex Mono',monospace; }
+.callout.insight { background:var(--accent-dim); border-color:var(--accent); color:var(--ink2); }
+.callout.insight .callout-title { color:var(--accent); }
+.callout.warning { background:var(--amber-dim); border-color:var(--amber); color:var(--ink2); }
+.callout.warning .callout-title { color:var(--amber); }
+.callout.tip { background:var(--green-dim); border-color:var(--green); color:var(--ink2); }
+.callout.tip .callout-title { color:var(--green); }
+.callout.think { background:var(--purple-dim); border-color:var(--purple); color:var(--ink2); }
+.callout.think .callout-title { color:var(--purple); }
+
+/* STEP LIST */
+.step-list { display:flex; flex-direction:column; gap:20px; margin:24px 0; }
+.step-item { display:flex; gap:18px; }
+.step-num { width:30px; height:30px; border-radius:50%; background:var(--surface2); border:1.5px solid var(--border2); display:flex; align-items:center; justify-content:center; font-family:'IBM Plex Mono',monospace; font-size:12px; font-weight:500; color:var(--ink2); flex-shrink:0; margin-top:2px; }
+.step-title { font-family:'Fraunces',serif; font-size:17px; font-weight:600; color:var(--ink); margin-bottom:5px; }
+.step-body { font-size:14px; line-height:1.7; color:var(--ink2); }
+.step-body strong { color:var(--ink); font-weight:500; }
+
+/* CODE BLOCK */
+.code-block { background:var(--surface); border:1px solid var(--border); border-radius:10px; overflow:hidden; margin:20px 0; }
+.code-header { display:flex; align-items:center; justify-content:space-between; padding:10px 16px; border-bottom:1px solid var(--border); background:var(--surface2); }
+.code-filename { font-family:'IBM Plex Mono',monospace; font-size:12px; color:var(--ink2); }
+.code-lang { font-family:'IBM Plex Mono',monospace; font-size:11px; color:var(--ink3); background:var(--border); padding:2px 8px; border-radius:4px; }
+.code-body { padding:20px; overflow-x:auto; }
+.code-body pre { font-family:'IBM Plex Mono',monospace; font-size:13px; line-height:1.7; color:var(--ink2); white-space:pre; }
+.c-comment { color:var(--ink3); font-style:italic; }
+.c-key { color:var(--amber); }
+.c-str { color:var(--green); }
+.c-fn { color:var(--accent); }
+.c-kw { color:var(--purple); }
+
+/* RUBRIC TABLE */
+.rubric-table { width:100%; border-collapse:collapse; margin:24px 0; font-size:14px; }
+.rubric-table th { font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:.1em; text-transform:uppercase; color:var(--ink3); padding:10px 14px; border-bottom:1px solid var(--border); text-align:left; font-weight:500; }
+.rubric-table td { padding:12px 14px; border-bottom:1px solid var(--border); color:var(--ink2); vertical-align:top; line-height:1.5; }
+.rubric-table tr:last-child td { border-bottom:none; }
+.rubric-table .criterion { font-weight:500; color:var(--ink); font-size:13px; }
+.rubric-table .score { font-family:'IBM Plex Mono',monospace; font-size:12px; color:var(--accent); }
+
+/* BEFORE/AFTER */
+.before-after { display:grid; grid-template-columns:1fr 1fr; gap:16px; margin:24px 0; }
+@media(max-width:700px){ .before-after { grid-template-columns:1fr; } }
+.ba-card { background:var(--surface); border:1px solid var(--border); border-radius:10px; overflow:hidden; }
+.ba-header { padding:10px 16px; border-bottom:1px solid var(--border); font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:.08em; text-transform:uppercase; }
+.ba-header.bad { color:var(--red); }
+.ba-header.good { color:var(--green); }
+.ba-body { padding:16px; font-size:13px; line-height:1.65; color:var(--ink2); }
+.ba-body em { font-style:italic; color:var(--ink3); }
+
+/* ACTIVITY */
+.activity { background:var(--surface); border:1px solid var(--border); border-radius:14px; overflow:hidden; margin:32px 0; }
+.activity-header { padding:14px 22px; background:var(--surface2); border-bottom:1px solid var(--border); display:flex; align-items:center; gap:12px; }
+.activity-badge { font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:.1em; text-transform:uppercase; padding:4px 10px; border-radius:6px; background:var(--accent-dim); color:var(--accent); border:1px solid rgba(126,184,247,0.2); }
+.activity-title { font-family:'Fraunces',serif; font-size:16px; font-weight:600; color:var(--ink); }
+.activity-body { padding:22px; }
+.activity-prompt { font-size:15px; line-height:1.7; color:var(--ink2); margin-bottom:18px; }
+.activity-textarea { width:100%; min-height:130px; background:var(--bg); border:1px solid var(--border); border-radius:8px; padding:14px 16px; font-family:'IBM Plex Mono',monospace; font-size:13px; color:var(--ink); resize:vertical; outline:none; line-height:1.6; transition:border-color .15s; }
+.activity-textarea:focus { border-color:var(--accent); }
+.activity-textarea::placeholder { color:var(--ink3); }
+.activity-save { margin-top:10px; display:flex; align-items:center; gap:12px; }
+.btn-save { font-family:'DM Sans',sans-serif; font-size:13px; font-weight:500; padding:7px 18px; border-radius:8px; border:1px solid var(--accent); background:var(--accent-dim); color:var(--accent); cursor:pointer; transition:all .15s; }
+.btn-save:hover { background:var(--accent); color:var(--bg); }
+.save-status { font-family:'IBM Plex Mono',monospace; font-size:12px; color:var(--green); opacity:0; transition:opacity .3s; }
+.save-status.visible { opacity:1; }
+
+/* PART COMPLETE */
+.part-complete { margin-top:40px; padding:18px 22px; background:var(--green-dim); border:1px solid rgba(77,186,135,0.2); border-radius:10px; display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap; }
+.complete-text { font-size:14px; color:var(--green); font-weight:500; }
+.btn-complete { font-family:'DM Sans',sans-serif; font-size:13px; font-weight:500; padding:8px 20px; border-radius:8px; border:none; background:var(--green); color:var(--bg); cursor:pointer; transition:opacity .15s; }
+.btn-complete:hover { opacity:.85; }
+.btn-complete.done { background:var(--border2); color:var(--ink3); cursor:default; opacity:1; }
+
+code { font-family:'IBM Plex Mono',monospace; font-size:.875em; background:var(--surface2); border:1px solid var(--border); padding:1px 6px; border-radius:4px; color:var(--amber); }
+
+/* RESPONSIVE */
+@media(max-width:900px){ .sidebar{display:none} .main{margin-left:0} .hero,.part{padding:40px 24px} }
+</style>
+</head>
+<body>
+
+<div id="progress-bar"></div>
+
+<nav class="sidebar">
+  <div class="sidebar-logo">
+    <a href="../index.html">← DP AI Lab</a>
+    <div class="sidebar-title">Essay Rubric Coach<br>Build Guide</div>
+  </div>
+  <div class="nav-section">
+    <div class="nav-label">Blueprint</div>
+    <a class="nav-item active" href="#part0" data-part="0"><span class="nav-dot"></span>Overview</a>
+    <a class="nav-item" href="#part1" data-part="1"><span class="nav-dot"></span>Part 1 — What feedback actually is</a>
+    <a class="nav-item" href="#part2" data-part="2"><span class="nav-dot"></span>Part 2 — Know your rubric</a>
+    <a class="nav-item" href="#part3" data-part="3"><span class="nav-dot"></span>Part 3 — Design the prompt</a>
+    <a class="nav-item" href="#part4" data-part="4"><span class="nav-dot"></span>Part 4 — Build the interface</a>
+    <a class="nav-item" href="#part5" data-part="5"><span class="nav-dot"></span>Part 5 — Test & deploy</a>
+  </div>
+  <div class="nav-progress">
+    <div class="progress-label"><span>Progress</span><span id="progress-pct">0%</span></div>
+    <div class="progress-track"><div class="progress-fill" id="progress-fill"></div></div>
+  </div>
+</nav>
+
+<main class="main">
+
+  <!-- HERO -->
+  <section class="hero" id="part0">
+    <div class="hero-badge">✍️ Beginner · 3–5 days</div>
+    <h1>Build an<br><em>Essay Rubric Coach</em><br>that gives real feedback</h1>
+    <p class="hero-desc">Most AI feedback is vague. "Improve your analysis" is useless. This project is about building something that knows the IB rubric for your specific subject and gives feedback the way a good examiner would — criterion by criterion, with reasons.</p>
+    <div class="hero-meta">
+      <div class="meta-item"><span class="meta-label">Time</span><span class="meta-value">3–5 days</span></div>
+      <div class="meta-item"><span class="meta-label">Difficulty</span><span class="meta-value">Beginner</span></div>
+      <div class="meta-item"><span class="meta-label">You'll need</span><span class="meta-value">Claude API key · HTML/CSS/JS</span></div>
+      <div class="meta-item"><span class="meta-label">Works for</span><span class="meta-value">History · Lang A · Economics · Sciences</span></div>
+    </div>
+  </section>
+
+  <!-- PART 1 -->
+  <section class="part" id="part1">
+    <div class="part-header">
+      <div class="part-num">01 / 05</div>
+      <div>
+        <div class="part-eyebrow">Foundations</div>
+        <div class="part-title">What feedback actually is</div>
+        <p class="part-intro">Before you write a single line of code, you need a clear idea of what makes feedback useful versus useless. The difference determines everything about how you'll write your prompt.</p>
+      </div>
+    </div>
+
+    <p class="body-text">Think about the last time someone gave you feedback on a piece of writing. What made it helpful? Most students, if they're honest, say: "When it told me exactly what was wrong and why." Not "be more analytical." Not "good structure." Something specific.</p>
+
+    <div class="before-after">
+      <div class="ba-card">
+        <div class="ba-header bad">✕ Useless feedback</div>
+        <div class="ba-body">"Your analysis could be deeper. Try to engage more critically with your sources and develop your argument further. The structure is mostly good but the conclusion needs more work."<br><br><em>— This could apply to any essay, by any student, on any topic. Zero diagnostic value.</em></div>
+      </div>
+      <div class="ba-card">
+        <div class="ba-header good">✓ Useful feedback</div>
+        <div class="ba-body">"Criterion D (Use of sources): You quote Kennan twice but never explain why his perspective is significant or limited. An examiner needs to see you questioning the source — when was it written, what was Kennan's position, what might he have omitted?"<br><br><em>— Specific, actionable, criterion-linked. The student knows exactly what to do.</em></div>
+      </div>
+    </div>
+
+    <p class="body-text">The IB rubric is actually a gift here. It tells you exactly what examiners are looking for — criterion by criterion, level descriptor by level descriptor. Your job is to build something that applies those criteria to a student's actual work, not just waves at the essay in general.</p>
+
+    <div class="callout insight">
+      <div class="callout-title">The core design principle</div>
+      Your coach must do two things that generic AI doesn't: (1) know which rubric applies to this specific essay type, and (2) point at the specific sentence or paragraph that needs work — not the essay in general.
+    </div>
+
+    <p class="body-text">There's also a critical ethical line here that the tool must enforce: <strong style="color:var(--ink)">it gives feedback, it never rewrites</strong>. The moment it starts offering to "improve" a sentence, students will use it as a writing tool rather than a feedback tool. Your prompt must make this impossible — not just discouraged.</p>
+
+    <div class="callout warning">
+      <div class="callout-title">The line you must build in</div>
+      If a student asks "can you rewrite this paragraph?", the coach should decline and instead ask: "What did you mean to say in this paragraph? Tell me the idea and I'll help you express it more clearly yourself."
+    </div>
+
+    <div class="activity">
+      <div class="activity-header">
+        <span class="activity-badge">✍ Your turn</span>
+        <span class="activity-title">Define what good feedback looks like for you</span>
+      </div>
+      <div class="activity-body">
+        <p class="activity-prompt">Think about one specific essay type you write in DP — History HL, Language A commentary, Economics IA, whatever you do most. What are the three most common mistakes you make, or the things you never know if you've done well? Write them below. This is what your coach needs to catch — not generic weaknesses, your specific ones.</p>
+        <textarea class="activity-textarea" id="act1" placeholder="Essay type I'm building this for: [e.g. History HL Paper 2]&#10;&#10;Mistake 1 I always make: ...&#10;&#10;Mistake 2 I never know if I've fixed: ...&#10;&#10;Thing 3 that's always vague in teacher feedback: ..."></textarea>
+        <div class="activity-save">
+          <button class="btn-save" onclick="save('act1')">Save my thinking</button>
+          <span class="save-status" id="status-act1">Saved ✓</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="part-complete">
+      <span class="complete-text">✓ You understand the difference between useful and useless feedback</span>
+      <button class="btn-complete" id="complete-1" onclick="markDone(1)">Mark Part 1 done →</button>
+    </div>
+  </section>
+
+  <!-- PART 2 -->
+  <section class="part" id="part2">
+    <div class="part-header">
+      <div class="part-num">02 / 05</div>
+      <div>
+        <div class="part-eyebrow">The Rubric</div>
+        <div class="part-title">Know your rubric — deeply</div>
+        <p class="part-intro">The IB rubric is the only thing that matters to an examiner. Your coach needs to know it at least as well as you do. This part is about understanding the rubric well enough to put it into a prompt.</p>
+      </div>
+    </div>
+
+    <p class="body-text">Different essay types in the DP have very different rubrics. Here's an example — History HL Paper 2. Notice how specific each criterion is. This is what you'll be loading into your system prompt:</p>
+
+    <table class="rubric-table">
+      <thead>
+        <tr>
+          <th>Criterion</th>
+          <th>Max</th>
+          <th>What the examiner is actually looking for</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="criterion">A — Thesis</td>
+          <td class="score">3</td>
+          <td>A clear, defensible claim that directly answers the question. Not a description of what will be discussed — an actual position.</td>
+        </tr>
+        <tr>
+          <td class="criterion">B — Evidence</td>
+          <td class="score">6</td>
+          <td>Accurate, relevant, specific historical evidence. Named people, dates, events, statistics. "Many people died" = 0. "Approximately 6 million Jews were killed in the Holocaust" = evidence.</td>
+        </tr>
+        <tr>
+          <td class="criterion">C — Analysis & argument</td>
+          <td class="score">6</td>
+          <td>Does the evidence support the thesis? Does the student explain HOW it supports it, not just state that it does?</td>
+        </tr>
+        <tr>
+          <td class="criterion">D — Source evaluation</td>
+          <td class="score">5</td>
+          <td>Are sources used critically? Origin, purpose, value, limitation — not just "this source says X".</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="callout tip">
+      <div class="callout-title">Where to find the actual rubric</div>
+      Your teacher has the IB Subject Guide — ask for the assessment criteria section. You can also find them in past paper markschemes on Follett Shelf or your school's IB resource portal. Copy the exact wording — level descriptors vary by subject and you want the real ones, not a summary.
+    </div>
+
+    <p class="body-text">The most important thing to notice: each criterion has level descriptors — what a Level 1 looks like versus a Level 4. Your prompt needs to include those descriptors so the AI can locate the student's work within the band, not just say "this could be better."</p>
+
+    <div class="callout think">
+      <div class="callout-title">A key decision to make now</div>
+      Will you build for one subject only, or multiple? Starting with one subject (the one you actually write essays for) is much better. A coach that deeply knows the History HL rubric is more useful than one that half-knows five rubrics. You can add subjects later.
+    </div>
+
+    <div class="activity">
+      <div class="activity-header">
+        <span class="activity-badge">✍ Your turn</span>
+        <span class="activity-title">Write out your rubric in plain English</span>
+      </div>
+      <div class="activity-body">
+        <p class="activity-prompt">Pick your subject and essay type. Write out each criterion: the name, the max marks, and in your own words what the examiner is actually looking for. Don't copy the IB jargon — translate it into what it means in practice. This becomes the core of your system prompt.</p>
+        <textarea class="activity-textarea" id="act2" style="min-height:200px;" placeholder="Subject & essay type: [e.g. Economics HL Internal Assessment]&#10;&#10;Criterion A — [Name]: [Max marks]&#10;In practice this means: ...&#10;&#10;Criterion B — [Name]: [Max marks]&#10;In practice this means: ...&#10;&#10;Criterion C — ..."></textarea>
+        <div class="activity-save">
+          <button class="btn-save" onclick="save('act2')">Save my rubric</button>
+          <span class="save-status" id="status-act2">Saved ✓</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="part-complete">
+      <span class="complete-text">✓ You have the rubric written out in your own words — ready to become a prompt</span>
+      <button class="btn-complete" id="complete-2" onclick="markDone(2)">Mark Part 2 done →</button>
+    </div>
+  </section>
+
+  <!-- PART 3 -->
+  <section class="part" id="part3">
+    <div class="part-header">
+      <div class="part-num">03 / 05</div>
+      <div>
+        <div class="part-eyebrow">The Prompt</div>
+        <div class="part-title">Design the system prompt</div>
+        <p class="part-intro">The system prompt is where the rubric becomes a coach. This is the most important part of the entire project — get this right and the rest is just interface. Get this wrong and no amount of polish will fix it.</p>
+      </div>
+    </div>
+
+    <p class="body-text">Here's a worked example — a system prompt for a History HL Paper 2 essay coach. Read it carefully before writing your own. Notice what it does and doesn't allow:</p>
+
+    <div class="code-block">
+      <div class="code-header"><span class="code-filename">prompts/history-hl.md</span><span class="code-lang">System prompt</span></div>
+      <div class="code-body"><pre><span class="c-comment"># Essay Rubric Coach — History HL Paper 2</span>
+
+<span class="c-key">## Who you are</span>
+
+You are an experienced IB History examiner giving feedback on
+a student's Paper 2 essay. You have marked hundreds of these essays.
+You are direct, specific, and honest. You do not flatter.
+
+<span class="c-key">## Your method</span>
+
+When given an essay, you:
+1. State the essay question (or ask the student to provide it
+   if they haven't).
+2. Go through each criterion below, one at a time.
+3. For each criterion: quote the specific sentence or paragraph
+   you are commenting on, then explain what an examiner would
+   think reading it, then identify one concrete thing to improve.
+4. End with a single priority: the ONE thing that would most
+   improve this essay's mark if fixed.
+
+<span class="c-key">## The criteria (History HL Paper 2)</span>
+
+<span class="c-str">Criterion A — Thesis (max 3 marks)</span>
+A strong thesis: makes a clear, defensible claim; directly answers
+the question; takes a position (not just "there were many factors").
+Weak thesis: restates the question, describes what the essay will do,
+or makes a claim too vague to test against evidence.
+
+<span class="c-str">Criterion B — Evidence (max 6 marks)</span>
+Strong: specific named events, people, statistics, dates, places.
+Weak: generalisations ("many people suffered"), vague references
+("according to a historian"), or inaccurate facts.
+For each paragraph: is there at least one specific piece of evidence?
+
+<span class="c-str">Criterion C — Analysis & argument (max 6 marks)</span>
+Strong: the student explains HOW the evidence supports the thesis —
+not just that it does. The argument builds across paragraphs.
+Weak: paragraphs that describe events without connecting them to
+the thesis; evidence that "stands alone" without interpretation.
+
+<span class="c-str">Criterion D — Source evaluation (max 5 marks)</span>
+Strong: named sources with origin, purpose, and at least one
+limitation or value noted. The evaluation is specific to that source.
+Weak: "this source is useful because it gives information", or
+no engagement with where the source comes from or why that matters.
+
+<span class="c-key">## What you never do</span>
+
+- Rewrite any part of the essay. If asked, say: "Tell me what you
+  were trying to say and I'll help you say it yourself."
+- Give a score — you give feedback, not a grade.
+- Give vague feedback like "improve your analysis." Every comment
+  must point to a specific sentence, quotation, or section.
+- Say the essay is good when it isn't. Be honest.</pre>
+      </div>
+    </div>
+
+    <p class="body-text">Notice the structure: who the AI is, a clear method to follow, the rubric with level guidance baked in, and explicit "never do" rules. The method section is crucial — it forces the AI to go criterion by criterion rather than giving a general impression.</p>
+
+    <div class="callout insight">
+      <div class="callout-title">The most important line in any coaching prompt</div>
+      "Quote the specific sentence or paragraph you are commenting on." Without this, AI feedback floats above the essay. With it, every comment is anchored to actual text the student can find and change.
+    </div>
+
+    <p class="body-text">One more pattern worth building in: the priority at the end. After going through all criteria, the AI names the single most important thing to fix. This stops students from being overwhelmed by a list of 8 improvements — they know where to start.</p>
+
+    <div class="activity">
+      <div class="activity-header">
+        <span class="activity-badge">✍ Your turn</span>
+        <span class="activity-title">Write your system prompt</span>
+      </div>
+      <div class="activity-body">
+        <p class="activity-prompt">Using the structure above and the rubric you wrote in Part 2, write the full system prompt for your essay coach. Keep the "who you are" and "method" sections short — the rubric section should be the longest part. Most importantly: write the "never do" rules for your specific subject. What's the thing students most want the AI to do for them that you want to prevent?</p>
+        <textarea class="activity-textarea" id="act3" style="min-height:280px;" placeholder="# Essay Rubric Coach — [Your subject & essay type]&#10;&#10;## Who you are&#10;&#10;You are an experienced IB [subject] examiner...&#10;&#10;## Your method&#10;&#10;When given an essay, you:&#10;1. ...&#10;&#10;## The criteria&#10;&#10;Criterion A — [Name] (max X marks)&#10;...&#10;&#10;## What you never do&#10;&#10;- ..."></textarea>
+        <div class="activity-save">
+          <button class="btn-save" onclick="save('act3')">Save my prompt</button>
+          <span class="save-status" id="status-act3">Saved ✓</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="part-complete">
+      <span class="complete-text">✓ You have a complete system prompt ready to test</span>
+      <button class="btn-complete" id="complete-3" onclick="markDone(3)">Mark Part 3 done →</button>
+    </div>
+  </section>
+
+  <!-- PART 4 -->
+  <section class="part" id="part4">
+    <div class="part-header">
+      <div class="part-num">04 / 05</div>
+      <div>
+        <div class="part-eyebrow">The Build</div>
+        <div class="part-title">Build the interface</div>
+        <p class="part-intro">The interface for this project is deliberately simple — a textarea for the essay, a button, and a results panel. Complexity here is a distraction. The value is in the prompt, not the UI.</p>
+      </div>
+    </div>
+
+    <p class="body-text">You need four things on the page:</p>
+
+    <div class="step-list">
+      <div class="step-item">
+        <div class="step-num">1</div>
+        <div>
+          <div class="step-title">Subject selector</div>
+          <div class="step-body">A dropdown with your supported essay types. Each option loads a different system prompt. Start with just one — add more later. <code>&lt;select id="subject"&gt;</code> with one <code>&lt;option&gt;</code> per rubric.</div>
+        </div>
+      </div>
+      <div class="step-item">
+        <div class="step-num">2</div>
+        <div>
+          <div class="step-title">Essay question input</div>
+          <div class="step-body">A short text field for the essay question or title. The AI needs this to check whether the thesis actually answers the question. Without it, Criterion A feedback is impossible.</div>
+        </div>
+      </div>
+      <div class="step-item">
+        <div class="step-num">3</div>
+        <div>
+          <div class="step-title">Essay body textarea</div>
+          <div class="step-body">A large textarea where the student pastes their draft. Add a character counter — IB essays have word limits and students should know if they're over. Most Paper 2 essays should be 800–1000 words.</div>
+        </div>
+      </div>
+      <div class="step-item">
+        <div class="step-num">4</div>
+        <div>
+          <div class="step-title">Feedback panel</div>
+          <div class="step-body">Where the response appears. Render it as structured sections — one block per criterion — not as a wall of text. Use the criterion name as a heading so students can navigate directly to the area they want to work on.</div>
+        </div>
+      </div>
+    </div>
+
+    <p class="body-text">Here's the core JavaScript that handles the API call. The key difference from a chatbot is that you're sending the full essay as the user message — not just a short question:</p>
+
+    <div class="code-block">
+      <div class="code-header"><span class="code-filename">public/app.js</span><span class="code-lang">JavaScript</span></div>
+      <div class="code-body"><pre><span class="c-comment">// Load system prompts — one file per subject</span>
+<span class="c-kw">const</span> PROMPTS = {
+  <span class="c-str">'history-hl'</span>: <span class="c-str">''</span>,   <span class="c-comment">// filled on load</span>
+  <span class="c-str">'economics-ia'</span>: <span class="c-str">''</span>,
+};
+
+<span class="c-kw">async function</span> <span class="c-fn">loadPrompts</span>() {
+  <span class="c-kw">for</span> (<span class="c-kw">const</span> key <span class="c-kw">of</span> Object.<span class="c-fn">keys</span>(PROMPTS)) {
+    <span class="c-kw">const</span> res = <span class="c-kw">await</span> <span class="c-fn">fetch</span>(<span class="c-str">`/prompts/${key}.md`</span>);
+    PROMPTS[key] = <span class="c-kw">await</span> res.<span class="c-fn">text</span>();
+  }
+}
+
+<span class="c-kw">async function</span> <span class="c-fn">getFeedback</span>() {
+  <span class="c-kw">const</span> subject = document.<span class="c-fn">getElementById</span>(<span class="c-str">'subject'</span>).value;
+  <span class="c-kw">const</span> question = document.<span class="c-fn">getElementById</span>(<span class="c-str">'question'</span>).value.<span class="c-fn">trim</span>();
+  <span class="c-kw">const</span> essay = document.<span class="c-fn">getElementById</span>(<span class="c-str">'essay'</span>).value.<span class="c-fn">trim</span>();
+
+  <span class="c-kw">if</span> (!essay) { <span class="c-fn">alert</span>(<span class="c-str">'Paste your essay first.'</span>); <span class="c-kw">return</span>; }
+
+  <span class="c-comment">// Build the user message — essay question + essay body</span>
+  <span class="c-kw">const</span> userMessage = <span class="c-str">`Essay question: ${question || 'Not provided'}
+
+Essay:
+${essay}`</span>;
+
+  showLoading();
+
+  <span class="c-kw">const</span> res = <span class="c-kw">await</span> <span class="c-fn">fetch</span>(<span class="c-str">'/api/feedback'</span>, {
+    method: <span class="c-str">'POST'</span>,
+    headers: { <span class="c-str">'Content-Type'</span>: <span class="c-str">'application/json'</span> },
+    body: <span class="c-fn">JSON.stringify</span>({
+      systemPrompt: PROMPTS[subject],
+      userMessage: userMessage
+    })
+  });
+
+  <span class="c-kw">const</span> data = <span class="c-kw">await</span> res.<span class="c-fn">json</span>();
+  <span class="c-fn">showFeedback</span>(data.feedback);
+}</pre>
+      </div>
+    </div>
+
+    <div class="callout tip">
+      <div class="callout-title">Store system prompts as separate .md files</div>
+      Don't hardcode them in your JavaScript. Keep each rubric in <code>prompts/history-hl.md</code>, <code>prompts/economics-ia.md</code>, etc. This way you can update a rubric without touching any code — just edit the markdown file and redeploy.
+    </div>
+
+    <div class="activity">
+      <div class="activity-header">
+        <span class="activity-badge">✍ Your turn</span>
+        <span class="activity-title">Sketch your interface</span>
+      </div>
+      <div class="activity-body">
+        <p class="activity-prompt">Before you build anything, sketch what your page will look like. Draw it on paper or describe it here. What's at the top? What does the feedback panel look like — does it show all criteria at once, or one at a time? What happens after feedback is shown — can the student ask a follow-up question? Decide these things before you open a code editor.</p>
+        <textarea class="activity-textarea" id="act4" placeholder="Page layout (top to bottom):&#10;1. ...&#10;2. ...&#10;&#10;Feedback panel shows:&#10;...&#10;&#10;After feedback, the student can:&#10;...&#10;&#10;One follow-up interaction I want to support:&#10;..."></textarea>
+        <div class="activity-save">
+          <button class="btn-save" onclick="save('act4')">Save my sketch</button>
+          <span class="save-status" id="status-act4">Saved ✓</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="part-complete">
+      <span class="complete-text">✓ You know what to build and how the API call works</span>
+      <button class="btn-complete" id="complete-4" onclick="markDone(4)">Mark Part 4 done →</button>
+    </div>
+  </section>
+
+  <!-- PART 5 -->
+  <section class="part" id="part5">
+    <div class="part-header">
+      <div class="part-num">05 / 05</div>
+      <div>
+        <div class="part-eyebrow">Test & Deploy</div>
+        <div class="part-title">Test it on a real essay — then ship it</div>
+        <p class="part-intro">The most important test for this project isn't whether it runs — it's whether the feedback is actually useful. You need to test it on a real essay before you share it with anyone.</p>
+      </div>
+    </div>
+
+    <p class="body-text">Before you call it done, run these three tests:</p>
+
+    <div class="step-list">
+      <div class="step-item">
+        <div class="step-num">1</div>
+        <div>
+          <div class="step-title">Test with a real essay — ideally one that's already been marked</div>
+          <div class="step-body">If you have a returned essay with actual IB marks and comments, paste it in. Does the coach find the same weaknesses your teacher did? Does it miss anything important? This is your calibration test.</div>
+        </div>
+      </div>
+      <div class="step-item">
+        <div class="step-num">2</div>
+        <div>
+          <div class="step-title">Test the "never do" rules</div>
+          <div class="step-body">After getting feedback, type: "Can you rewrite my introduction?" Does it refuse correctly and redirect you? Type: "Just give me a better thesis." Does it hold the line? If not, go back to your system prompt and make the rules more explicit.</div>
+        </div>
+      </div>
+      <div class="step-item">
+        <div class="step-num">3</div>
+        <div>
+          <div class="step-title">Test with a deliberately weak essay</div>
+          <div class="step-body">Write or paste a poor essay — one with a vague thesis, no specific evidence, and no source evaluation. Does the coach identify all three problems clearly? Does it still point to specific sentences rather than giving general criticism?</div>
+        </div>
+      </div>
+    </div>
+
+    <p class="body-text" style="margin-top:28px;">Once it passes those three tests, deploying is the same as any static site with a serverless function for the API proxy:</p>
+
+    <div class="step-list">
+      <div class="step-item">
+        <div class="step-num">→</div>
+        <div>
+          <div class="step-title">Push to GitHub</div>
+          <div class="step-body"><code>git add . && git commit -m "Essay rubric coach — working" && git push</code></div>
+        </div>
+      </div>
+      <div class="step-item">
+        <div class="step-num">→</div>
+        <div>
+          <div class="step-title">Add API key to Netlify environment variables</div>
+          <div class="step-body">Site settings → Environment variables → <code>ANTHROPIC_API_KEY</code>. The key stays server-side in the Netlify function — never in your HTML or JS.</div>
+        </div>
+      </div>
+      <div class="step-item">
+        <div class="step-num">→</div>
+        <div>
+          <div class="step-title">Share the URL with one other student first</div>
+          <div class="step-body">Before sharing widely, give it to one person and watch them use it. What confuses them? What do they try to do that you didn't expect? Fix those things before sharing with your class.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="callout think">
+      <div class="callout-title">The most important thing after you ship</div>
+      Use it on your own essays, for real, for two weeks. Track whether your marks actually improve. If they do — why? If they don't — what is the feedback missing? The best version of this tool comes from you actually using it, not from building features nobody needs.
+    </div>
+
+    <div class="activity">
+      <div class="activity-header">
+        <span class="activity-badge">✍ Your turn</span>
+        <span class="activity-title">Write your test plan</span>
+      </div>
+      <div class="activity-body">
+        <p class="activity-prompt">Before you build anything, write down: which real essay will you test it on first? What are you expecting it to catch? What would "good enough to share" look like for you — what would the feedback need to do that it currently doesn't? This stops you from building forever and never shipping.</p>
+        <textarea class="activity-textarea" id="act5" placeholder="Essay I'll test it on first:&#10;...&#10;&#10;Weaknesses in that essay I'm expecting it to catch:&#10;1. ...&#10;2. ...&#10;&#10;'Good enough to share' means:&#10;...&#10;&#10;I'll share it with [person] on [date]:&#10;..."></textarea>
+        <div class="activity-save">
+          <button class="btn-save" onclick="save('act5')">Save my test plan</button>
+          <span class="save-status" id="status-act5">Saved ✓</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="part-complete" style="background:var(--accent-dim);border-color:rgba(126,184,247,0.2);">
+      <span class="complete-text" style="color:var(--accent)">🎉 Blueprint complete — go build it</span>
+      <button class="btn-complete" id="complete-5" onclick="markDone(5)" style="background:var(--accent);">Start building →</button>
+    </div>
+  </section>
+
+</main>
+
+<script>
+const KEY = 'dp_rubric_blueprint';
+function load() { try { return JSON.parse(localStorage.getItem(KEY)) || { done:[], activities:{} }; } catch { return { done:[], activities:{} }; } }
+function persist(s) { localStorage.setItem(KEY, JSON.stringify(s)); }
+
+function save(id) {
+  const s = load(); s.activities[id] = document.getElementById(id).value; persist(s);
+  const el = document.getElementById('status-' + id); el.classList.add('visible');
+  setTimeout(() => el.classList.remove('visible'), 2000);
+}
+
+function markDone(n) {
+  const s = load(); if (!s.done.includes(n)) s.done.push(n); persist(s); updateUI(s);
+  if (n < 5) document.getElementById('part' + n)?.scrollIntoView({ behavior:'smooth', block:'start' });
+}
+
+function updateUI(s) {
+  const pct = Math.round((s.done.length / 5) * 100);
+  document.getElementById('progress-fill').style.width = pct + '%';
+  document.getElementById('progress-pct').textContent = pct + '%';
+  s.done.forEach(n => {
+    const btn = document.getElementById('complete-' + n);
+    if (btn) { btn.textContent = '✓ Done'; btn.classList.add('done'); }
+    document.querySelector(`[data-part="${n}"]`)?.classList.add('done');
+  });
+  Object.entries(s.activities).forEach(([id, val]) => {
+    const el = document.getElementById(id); if (el && val) el.value = val;
+  });
+}
+
+function updateNav() {
+  const parts = document.querySelectorAll('[id^="part"]');
+  const items = document.querySelectorAll('.nav-item[data-part]');
+  let cur = '0';
+  parts.forEach(p => { if (p.getBoundingClientRect().top <= 120) { const m = p.id.match(/part(\d+)/); if (m) cur = m[1]; } });
+  items.forEach(i => { i.classList.toggle('active', i.dataset.part === cur); });
+  const t = window.scrollY, h = document.body.scrollHeight - window.innerHeight;
+  document.getElementById('progress-bar').style.width = (h > 0 ? (t/h)*100 : 0) + '%';
+}
+
+window.addEventListener('scroll', updateNav, { passive:true });
+updateUI(load());
+updateNav();
+</script>
+</body>
+</html>
